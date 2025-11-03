@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.predict import router as predict_router
 
 app = FastAPI(title="OddGuru API")
 
-# Permite frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -11,18 +11,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(predict_router, prefix="/api")
+
 @app.get("/")
 def home():
-    return {"message": "OddGuru API rodando!"}
+    return {"message": "OddGuru IA rodando com XGBoost!"}
 
-@app.get("/api/valuebets")
-def value_bets():
-    return [
-        {
-            "match": "Flamengo vs Palmeiras",
-            "prob_home": 0.68,
-            "odd_home": 1.85,
-            "edge": 0.123,
-            "suggestion": "Aposte no Flamengo!"
-        }
-    ]
+# Teste rápido
+@app.get("/api/test")
+def test():
+    return {
+        "match": "Flamengo vs Palmeiras",
+        "odd_home": 1.85,
+        "prob_home": 0.682,
+        "edge": 0.123
+    }
