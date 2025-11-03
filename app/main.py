@@ -1,3 +1,4 @@
+from app.football import router as football_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import joblib
@@ -49,3 +50,5 @@ def value_bets() -> List[Dict]:
                 "suggestion": "Aposte no mandante!"
             })
     return bets
+    
+    app.include_router(football_router, prefix="/api")
