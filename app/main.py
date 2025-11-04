@@ -36,7 +36,7 @@ except Exception as e:
     MODEL = None
 
 # =============================
-# DEBUG ENDPOINT
+# DEBUG ENDPOINT (SEM NUMPY)
 # =============================
 @app.get("/api/debug")
 def debug():
@@ -51,8 +51,8 @@ def debug():
         "model_exists": os.path.exists(model_path),
         "model_size_kb": round(os.path.getsize(model_path) / 1024, 2) if os.path.exists(model_path) else 0,
         "MODEL_loaded": MODEL is not None,
-        "classes": list(MODEL.classes_) if MODEL and hasattr(MODEL, 'classes_') else None,
-        "features": list(MODEL.feature_names_in_) if MODEL and hasattr(MODEL, 'feature_names_in_') else None
+        "classes": [int(c) for c in MODEL.classes_] if MODEL and hasattr(MODEL, 'classes_') else None,
+        "features": [str(f) for f in MODEL.feature_names_in_] if MODEL and hasattr(MODEL, 'feature_names_in_') else None
     }
 
 # =============================
@@ -64,7 +64,7 @@ def home():
     return {"message": "OddGuru IA rodando com XGBoost + API-Football!"}
 
 # =============================
-# VALUE BETS FIXAS (ORDEM EXATA)
+# VALUE BETS FIXAS (SEM NUMPY)
 # =============================
 @app.get("/api/valuebets")
 def value_bets() -> List[Dict]:
@@ -72,7 +72,6 @@ def value_bets() -> List[Dict]:
         return [{"error": "Modelo XGBoost não carregado"}]
 
     try:
-        # ORDEM EXATA DAS FEATURES
         features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
         test_data = pd.DataFrame([
             [12, 8, 14, 6, 3, 1.85],
@@ -80,17 +79,19 @@ def value_bets() -> List[Dict]:
         ], columns=features_order + ['odd_home'])
 
         X = test_data[features_order]
-        probs = MODEL.predict_proba(X)[:, 1]  # 1 = vitória do mandante
+        probs = MODEL.predict_proba(X)[:, 1]
 
         bets = []
         matches = ["Flamengo vs Palmeiras", "Corinthians vs São Paulo"]
         for i, prob in enumerate(probs):
-            edge = (prob * test_data.iloc[i]['odd_home']) - 1
+            prob = float(prob)  # CONVERTE numpy.float32 → float
+            odd = float(test_data.iloc[i]['odd_home'])
+            edge = (prob * odd) - 1
             if edge > 0.05:
                 bets.append({
                     "match": matches[i],
                     "prob_home": round(prob, 3),
-                    "odd_home": test_data.iloc[i]['odd_home'],
+                    "odd_home": round(odd, 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
@@ -101,7 +102,7 @@ def value_bets() -> List[Dict]:
         return [{"error": f"Erro: {str(e)}"}]
 
 # =============================
-# SMART BETS AO VIVO (ORDEM EXATA)
+# SMART BETS AO VIVO (SEM NUMPY)
 # =============================
 API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
 HEADERS = {"X-Auth-Token": API_TOKEN}
@@ -129,20 +130,19 @@ def smart_bets() -> List[Dict]:
             if not odd_home or odd_home < 1.5:
                 continue
 
-            # ORDEM EXATA
             features_df = pd.DataFrame([{
                 'home_goals_last5': 11, 'away_goals_last5': 8,
                 'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
             }])[features_order]
 
-            prob = MODEL.predict_proba(features_df)[0][1]
+            prob = float(MODEL.predict_proba(features_df)[0][1])  # CONVERTE numpy.float32
             edge = (prob * odd_home) - 1
 
             if edge > 0.05:
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": round(prob, 3),
-                    "odd_home": round(odd_home, 2),
+                    "odd_home": round(float(odd_home), 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
