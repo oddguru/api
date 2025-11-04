@@ -5,9 +5,6 @@ import pandas as pd
 import requests
 from typing import List, Dict
 
-# -----------------------------
-# APP + CORS
-# -----------------------------
 app = FastAPI(
     title="OddGuru IA",
     description="Value Bets com XGBoost + API-Football",
@@ -22,42 +19,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -----------------------------
-# CARREGA MODELO XGBoost
-# -----------------------------
+# CARREGA MODELO
 try:
     MODEL = joblib.load("model.pkl")
 except Exception as e:
     print(f"Erro ao carregar model.pkl: {e}")
     MODEL = None
 
-# -----------------------------
-# ROTA RAIZ (GET + HEAD)
-# -----------------------------
+# ROTA RAIZ
 @app.get("/", include_in_schema=False)
 @app.head("/", include_in_schema=False)
 def home():
     return {"message": "OddGuru IA rodando com XGBoost + API-Football!"}
 
-# -----------------------------
-# /api/valuebets (XGBoost fixo - fallback)
-# -----------------------------
+# VALUE BETS FIXAS
 @app.get("/api/valuebets")
 def value_bets() -> List[Dict]:
     if MODEL is None:
-        return [{"error": "Modelo XGBoost não carregado"}]
+        return [{"error": "Modelo não carregado"}]
 
     test_data = pd.DataFrame([
-        {
-            'home_goals_last5': 12, 'away_goals_last5': 8,
-            'home_form': 14, 'away_form': 6, 'h2h_home_wins': 3,
-            'odd_home': 1.85
-        },
-        {
-            'home_goals_last5': 9, 'away_goals_last5': 10,
-            'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2,
-            'odd_home': 2.10
-        }
+        {'home_goals_last5': 12, 'away_goals_last5': 8, 'home_form': 14, 'away_form': 6, 'h2h_home_wins': 3, 'odd_home': 1.85},
+        {'home_goals_last5': 9, 'away_goals_last5': 10, 'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2, 'odd_home': 2.10}
     ])
     features = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
     probs = MODEL.predict_proba(test_data[features])[:, 1]
@@ -74,24 +57,22 @@ def value_bets() -> List[Dict]:
                 "edge": round(edge, 3),
                 "suggestion": "APOSTE NO MANDANTE!"
             })
-    return bets or [{"message": "Nenhuma value bet fixa hoje"}]
+    return bets or [{"message": "Nenhuma value bet fixa"}]
 
-# -----------------------------
-# /api/smart-bets (API-Football AO VIVO + XGBoost)
-# -----------------------------
+# SMART BETS AO VIVO
 API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
 HEADERS = {"X-Auth-Token": API_TOKEN}
 
 @app.get("/api/smart-bets")
 def smart_bets() -> List[Dict]:
     if MODEL is None:
-        return [{"error": "Modelo XGBoost não carregado"}]
+        return [{"error": "Modelo não carregado"}]
 
     try:
         url = "https://api.football-data.org/v4/competitions/BSA/matches?status=SCHEDULED"
         resp = requests.get(url, headers=HEADERS, timeout=10)
         if resp.status_code != 200:
-            return [{"error": f"API Football: {resp.status_code}"}]
+            return [{"error": f"API: {resp.status_code}"}]
 
         matches = resp.json().get("matches", [])[:5]
         bets = []
@@ -100,16 +81,11 @@ def smart_bets() -> List[Dict]:
             home = m["homeTeam"]["shortName"]
             away = m["awayTeam"]["shortName"]
             odd_home = m.get("odds", {}).get("homeWin")
-            if not odd_home or odd_home < 1.5:
-                continue
+            if not odd_home or odd_home < 1.5: continue
 
-            # Features reais (simuladas — melhore com histórico real depois)
             features = pd.DataFrame([{
-                'home_goals_last5': 11,
-                'away_goals_last5': 8,
-                'home_form': 12,
-                'away_form': 7,
-                'h2h_home_wins': 3
+                'home_goals_last5': 11, 'away_goals_last5': 8,
+                'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
             }])
             prob = MODEL.predict_proba(features)[0][1]
             edge = (prob * odd_home) - 1
@@ -120,10 +96,10 @@ def smart_bets() -> List[Dict]:
                     "prob_home": round(prob, 3),
                     "odd_home": round(odd_home, 2),
                     "edge": round(edge, 3),
-                    "suggestion": "APOSTE NO MANDANTE!" if edge > 0.10 else "Value moderada"
+                    "suggestion": "APOSTE NO MANDANTE!"
                 })
 
-        return bets or [{"message": "Nenhuma value bet ao vivo hoje. Volte em 1h!"}]
+        return bets or [{"message": "Nenhuma value bet ao vivo. Volte em 1h!"}]
 
     except Exception as e:
-        return [{"error": f"Erro na API: {str(e)}"}]
+        return [{"error": str(e)}]
