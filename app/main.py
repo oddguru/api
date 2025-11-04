@@ -118,8 +118,9 @@ def smart_bets() -> List[Dict]:
         if resp.status_code != 200:
             return [{"error": f"API Football: {resp.status_code}"}]
 
-        matches = resp.json().get("matches", [])[:5]
+        matches = resp.json().get("matches", [])[:10]  # PEGA 10 JOGOS
         bets = []
+        debug = []
 
         features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
@@ -127,27 +128,37 @@ def smart_bets() -> List[Dict]:
             home = m["homeTeam"]["shortName"]
             away = m["awayTeam"]["shortName"]
             odd_home = m.get("odds", {}).get("homeWin")
-            if not odd_home or odd_home < 1.5:
-                continue
 
+            # DEBUG: mostra mesmo sem odd
             features_df = pd.DataFrame([{
                 'home_goals_last5': 11, 'away_goals_last5': 8,
                 'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
             }])[features_order]
 
-            prob = float(MODEL.predict_proba(features_df)[0][1])  # CONVERTE numpy.float32
-            edge = (prob * odd_home) - 1
+            prob = float(MODEL.predict_proba(features_df)[0][1])
+            edge = (prob * (odd_home or 1.0)) - 1 if odd_home else -1
 
-            if edge > 0.05:
+            debug.append({
+                "match": f"{home} vs {away}",
+                "odd_home": odd_home,
+                "prob_home": round(prob, 3),
+                "edge": round(edge, 3) if odd_home else None
+            })
+
+            if odd_home and edge > 0.05:
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": round(prob, 3),
-                    "odd_home": round(float(odd_home), 2),
+                    "odd_home": round(odd_home, 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
 
-        return bets or [{"message": "Nenhuma value bet ao vivo. Volte em 1h!"}]
+        # RETORNA DEBUG + BETS
+        return {
+            "value_bets": bets or [{"message": "Nenhuma value bet ao vivo"}],
+            "debug_jogos": debug
+        }
 
     except Exception as e:
-        return [{"error": f"Erro na API: {str(e)}"}]
+        return [{"error": f"Erro: {str(e)}"}]
