@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # =============================
-# CARREGA MODELO (FORMATO JSON - COMPATÍVEL)
+# CARREGA MODELO (JSON)
 # =============================
 try:
     MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model.json")
@@ -64,7 +64,7 @@ def home():
     return {"message": "OddGuru IA rodando com XGBoost + API-Football!"}
 
 # =============================
-# VALUE BETS FIXAS
+# VALUE BETS FIXAS (ORDEM EXATA)
 # =============================
 @app.get("/api/valuebets")
 def value_bets() -> List[Dict]:
@@ -72,18 +72,19 @@ def value_bets() -> List[Dict]:
         return [{"error": "Modelo XGBoost não carregado"}]
 
     try:
+        # ORDEM EXATA DAS FEATURES
+        features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
         test_data = pd.DataFrame([
-            {'home_goals_last5': 12, 'away_goals_last5': 8, 'home_form': 14, 'away_form': 6, 'h2h_home_wins': 3, 'odd_home': 1.85},
-            {'home_goals_last5': 9,  'away_goals_last5': 10, 'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2, 'odd_home': 2.10}
-        ])
-        features = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
+            [12, 8, 14, 6, 3, 1.85],
+            [9, 10, 10, 8, 2, 2.10]
+        ], columns=features_order + ['odd_home'])
 
-        probs = MODEL.predict_proba(test_data[features])
-        prob_home = probs[:, 1]  # 1 = vitória do mandante
+        X = test_data[features_order]
+        probs = MODEL.predict_proba(X)[:, 1]  # 1 = vitória do mandante
 
         bets = []
         matches = ["Flamengo vs Palmeiras", "Corinthians vs São Paulo"]
-        for i, prob in enumerate(prob_home):
+        for i, prob in enumerate(probs):
             edge = (prob * test_data.iloc[i]['odd_home']) - 1
             if edge > 0.05:
                 bets.append({
@@ -96,11 +97,11 @@ def value_bets() -> List[Dict]:
         return bets or [{"message": "Nenhuma value bet fixa hoje"}]
 
     except Exception as e:
-        print(f"ERRO EM /api/valuebets: {str(e)}")
-        return [{"error": f"Erro interno: {str(e)}"}]
+        print(f"ERRO EM value_bets: {str(e)}")
+        return [{"error": f"Erro: {str(e)}"}]
 
 # =============================
-# SMART BETS AO VIVO
+# SMART BETS AO VIVO (ORDEM EXATA)
 # =============================
 API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
 HEADERS = {"X-Auth-Token": API_TOKEN}
@@ -119,6 +120,8 @@ def smart_bets() -> List[Dict]:
         matches = resp.json().get("matches", [])[:5]
         bets = []
 
+        features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
+
         for m in matches:
             home = m["homeTeam"]["shortName"]
             away = m["awayTeam"]["shortName"]
@@ -126,11 +129,13 @@ def smart_bets() -> List[Dict]:
             if not odd_home or odd_home < 1.5:
                 continue
 
-            features = pd.DataFrame([{
+            # ORDEM EXATA
+            features_df = pd.DataFrame([{
                 'home_goals_last5': 11, 'away_goals_last5': 8,
                 'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
-            }])
-            prob = MODEL.predict_proba(features)[0][1]
+            }])[features_order]
+
+            prob = MODEL.predict_proba(features_df)[0][1]
             edge = (prob * odd_home) - 1
 
             if edge > 0.05:
