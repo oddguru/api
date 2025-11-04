@@ -70,10 +70,16 @@ def value_bets() -> List[Dict]:
 
     test_data = pd.DataFrame([
         {'home_goals_last5': 12, 'away_goals_last5': 8, 'home_form': 14, 'away_form': 6, 'h2h_home_wins': 3, 'odd_home': 1.85},
-        {'home_goals_last5': 9, 'away_goals_last5': 10, 'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2, 'odd_home': 2.10}
+        {'home_goals_last5': 9,  'away_goals_last5': 10, 'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2, 'odd_home': 2.10}
     ])
     features = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
-    probs = MODEL.predict_proba(test_data[features])[:, 1]  # [:, 1] = prob de vitória do mandante
+
+    try:
+        # TENTA BINÁRIO (classe 1 = vitória do mandante)
+        probs = MODEL.predict_proba(test_data[features])[:, 1]
+    except IndexError:
+        # SE FALHAR → MODELO TEM 3 CLASSES → PEGA A CLASSE 'vitória mandante' (índice 0)
+        probs = MODEL.predict_proba(test_data[features])[:, 0]
 
     bets = []
     matches = ["Flamengo vs Palmeiras", "Corinthians vs São Paulo"]
