@@ -1,3 +1,4 @@
+from app.smart_bets import router as smart_router
 from app.football import router as football_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,3 +53,4 @@ def value_bets() -> List[Dict]:
     return bets
     
     app.include_router(football_router, prefix="/api")
+    app.include_router(smart_router, prefix="/api")
