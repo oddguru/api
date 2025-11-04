@@ -1,12 +1,7 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg2-binary
-xgboost
-pydantic
-python-dotenv
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
 xgboost==2.0.3
-joblib==1.3.2
 pandas==2.1.4
-scikit-learn
-requests
+joblib==1.3.2
+scikit-learn==1.3.2
+requests==2.31.0
