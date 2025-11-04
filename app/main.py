@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import joblib
+from xgboost import XGBClassifier
 import pandas as pd
 import requests
 import os
@@ -24,24 +24,25 @@ app.add_middleware(
 )
 
 # =============================
-# CARREGA MODELO (CAMINHO CORRETO)
+# CARREGA MODELO (FORMATO JSON - COMPATÍVEL)
 # =============================
 try:
-    MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model.pkl")
-    MODEL = joblib.load(MODEL_PATH)
-    print(f"Modelo carregado com sucesso: {MODEL_PATH}")
+    MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model.json")
+    MODEL = XGBClassifier()
+    MODEL.load_model(MODEL_PATH)
+    print(f"Modelo JSON carregado com sucesso: {MODEL_PATH}")
 except Exception as e:
-    print(f"Erro ao carregar model.pkl: {e}")
+    print(f"Erro ao carregar model.json: {e}")
     MODEL = None
 
 # =============================
-# DEBUG ENDPOINT (DIAGNÓSTICO)
+# DEBUG ENDPOINT
 # =============================
 @app.get("/api/debug")
 def debug():
     current_dir = os.path.dirname(__file__)
     root_dir = os.path.dirname(current_dir)
-    model_path = os.path.join(root_dir, "model.pkl")
+    model_path = os.path.join(root_dir, "model.json")
     
     return {
         "current_dir": current_dir,
@@ -49,7 +50,9 @@ def debug():
         "model_path": model_path,
         "model_exists": os.path.exists(model_path),
         "model_size_kb": round(os.path.getsize(model_path) / 1024, 2) if os.path.exists(model_path) else 0,
-        "MODEL_loaded": MODEL is not None
+        "MODEL_loaded": MODEL is not None,
+        "classes": list(MODEL.classes_) if MODEL and hasattr(MODEL, 'classes_') else None,
+        "features": list(MODEL.feature_names_in_) if MODEL and hasattr(MODEL, 'feature_names_in_') else None
     }
 
 # =============================
@@ -61,7 +64,7 @@ def home():
     return {"message": "OddGuru IA rodando com XGBoost + API-Football!"}
 
 # =============================
-# VALUE BETS FIXAS (XGBoost)
+# VALUE BETS FIXAS
 # =============================
 @app.get("/api/valuebets")
 def value_bets() -> List[Dict]:
@@ -75,20 +78,8 @@ def value_bets() -> List[Dict]:
         ])
         features = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
-        # DEBUG: Mostra shape do modelo
-        print("Classes do modelo:", MODEL.classes_ if hasattr(MODEL, 'classes_') else "N/A")
-        print("Número de features esperadas:", len(MODEL.feature_names_in_) if hasattr(MODEL, 'feature_names_in_') else "N/A")
-
         probs = MODEL.predict_proba(test_data[features])
-        print("Probs shape:", probs.shape)
-
-        # Ajusta índice com base no número de classes
-        if probs.shape[1] == 2:
-            prob_home = probs[:, 1]
-        elif probs.shape[1] == 3:
-            prob_home = probs[:, 0]  # vitória do mandante
-        else:
-            return [{"error": f"Modelo com {probs.shape[1]} classes — não suportado"}]
+        prob_home = probs[:, 1]  # 1 = vitória do mandante
 
         bets = []
         matches = ["Flamengo vs Palmeiras", "Corinthians vs São Paulo"]
@@ -106,12 +97,10 @@ def value_bets() -> List[Dict]:
 
     except Exception as e:
         print(f"ERRO EM /api/valuebets: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return [{"error": f"Erro interno: {str(e)}"}]
 
 # =============================
-# SMART BETS AO VIVO (API-Football)
+# SMART BETS AO VIVO
 # =============================
 API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
 HEADERS = {"X-Auth-Token": API_TOKEN}
