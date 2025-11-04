@@ -68,32 +68,47 @@ def value_bets() -> List[Dict]:
     if MODEL is None:
         return [{"error": "Modelo XGBoost não carregado"}]
 
-    test_data = pd.DataFrame([
-        {'home_goals_last5': 12, 'away_goals_last5': 8, 'home_form': 14, 'away_form': 6, 'h2h_home_wins': 3, 'odd_home': 1.85},
-        {'home_goals_last5': 9,  'away_goals_last5': 10, 'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2, 'odd_home': 2.10}
-    ])
-    features = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
-
     try:
-        # TENTA BINÁRIO (classe 1 = vitória do mandante)
-        probs = MODEL.predict_proba(test_data[features])[:, 1]
-    except IndexError:
-        # SE FALHAR → MODELO TEM 3 CLASSES → PEGA A CLASSE 'vitória mandante' (índice 0)
-        probs = MODEL.predict_proba(test_data[features])[:, 0]
+        test_data = pd.DataFrame([
+            {'home_goals_last5': 12, 'away_goals_last5': 8, 'home_form': 14, 'away_form': 6, 'h2h_home_wins': 3, 'odd_home': 1.85},
+            {'home_goals_last5': 9,  'away_goals_last5': 10, 'home_form': 10, 'away_form': 8, 'h2h_home_wins': 2, 'odd_home': 2.10}
+        ])
+        features = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
-    bets = []
-    matches = ["Flamengo vs Palmeiras", "Corinthians vs São Paulo"]
-    for i, prob in enumerate(probs):
-        edge = (prob * test_data.iloc[i]['odd_home']) - 1
-        if edge > 0.05:
-            bets.append({
-                "match": matches[i],
-                "prob_home": round(prob, 3),
-                "odd_home": test_data.iloc[i]['odd_home'],
-                "edge": round(edge, 3),
-                "suggestion": "APOSTE NO MANDANTE!"
-            })
-    return bets or [{"message": "Nenhuma value bet fixa hoje"}]
+        # DEBUG: Mostra shape do modelo
+        print("Classes do modelo:", MODEL.classes_ if hasattr(MODEL, 'classes_') else "N/A")
+        print("Número de features esperadas:", len(MODEL.feature_names_in_) if hasattr(MODEL, 'feature_names_in_') else "N/A")
+
+        probs = MODEL.predict_proba(test_data[features])
+        print("Probs shape:", probs.shape)
+
+        # Ajusta índice com base no número de classes
+        if probs.shape[1] == 2:
+            prob_home = probs[:, 1]
+        elif probs.shape[1] == 3:
+            prob_home = probs[:, 0]  # vitória do mandante
+        else:
+            return [{"error": f"Modelo com {probs.shape[1]} classes — não suportado"}]
+
+        bets = []
+        matches = ["Flamengo vs Palmeiras", "Corinthians vs São Paulo"]
+        for i, prob in enumerate(prob_home):
+            edge = (prob * test_data.iloc[i]['odd_home']) - 1
+            if edge > 0.05:
+                bets.append({
+                    "match": matches[i],
+                    "prob_home": round(prob, 3),
+                    "odd_home": test_data.iloc[i]['odd_home'],
+                    "edge": round(edge, 3),
+                    "suggestion": "APOSTE NO MANDANTE!"
+                })
+        return bets or [{"message": "Nenhuma value bet fixa hoje"}]
+
+    except Exception as e:
+        print(f"ERRO EM /api/valuebets: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return [{"error": f"Erro interno: {str(e)}"}]
 
 # =============================
 # SMART BETS AO VIVO (API-Football)
