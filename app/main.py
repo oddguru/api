@@ -114,7 +114,7 @@ def smart_bets() -> Dict:
 
     try:
         # CHAMPIONS LEAGUE HOJE
-        url = "https://api.football-data.org/v4/matches"
+        url = "https://api.football-data.org/v4/competitions/CL/matches?status=LIVE"
         resp = requests.get(url, headers=HEADERS, timeout=10)
         if resp.status_code != 200:
             return {"error": f"API Football: {resp.status_code}"}
