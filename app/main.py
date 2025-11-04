@@ -108,17 +108,17 @@ API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
 HEADERS = {"X-Auth-Token": API_TOKEN}
 
 @app.get("/api/smart-bets")
-def smart_bets() -> List[Dict]:
+def smart_bets() -> Dict:  # MUDOU PARA Dict
     if MODEL is None:
-        return [{"error": "Modelo XGBoost não carregado"}]
+        return {"error": "Modelo XGBoost não carregado"}
 
     try:
         url = "https://api.football-data.org/v4/competitions/BSA/matches?status=SCHEDULED"
         resp = requests.get(url, headers=HEADERS, timeout=10)
         if resp.status_code != 200:
-            return [{"error": f"API Football: {resp.status_code}"}]
+            return {"error": f"API Football: {resp.status_code}"}
 
-        matches = resp.json().get("matches", [])[:10]  # PEGA 10 JOGOS
+        matches = resp.json().get("matches", [])[:10]
         bets = []
         debug = []
 
@@ -129,36 +129,35 @@ def smart_bets() -> List[Dict]:
             away = m["awayTeam"]["shortName"]
             odd_home = m.get("odds", {}).get("homeWin")
 
-            # DEBUG: mostra mesmo sem odd
             features_df = pd.DataFrame([{
                 'home_goals_last5': 11, 'away_goals_last5': 8,
                 'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
             }])[features_order]
 
             prob = float(MODEL.predict_proba(features_df)[0][1])
-            edge = (prob * (odd_home or 1.0)) - 1 if odd_home else -1
+            edge = (prob * (odd_home or 1.0)) - 1 if odd_home else None
 
             debug.append({
                 "match": f"{home} vs {away}",
                 "odd_home": odd_home,
                 "prob_home": round(prob, 3),
-                "edge": round(edge, 3) if odd_home else None
+                "edge": round(edge, 3) if edge is not None else None
             })
 
             if odd_home and edge > 0.05:
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": round(prob, 3),
-                    "odd_home": round(odd_home, 2),
+                    "odd_home": round(float(odd_home), 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
 
-        # RETORNA DEBUG + BETS
         return {
             "value_bets": bets or [{"message": "Nenhuma value bet ao vivo"}],
             "debug_jogos": debug
         }
 
     except Exception as e:
-        return [{"error": f"Erro: {str(e)}"}]
+        print(f"ERRO EM smart_bets: {str(e)}")
+        return {"error": f"Erro: {str(e)}"}
