@@ -28,6 +28,21 @@ try:
 except Exception as e:
     print(f"Erro ao carregar model.pkl: {e}")
     MODEL = None
+    @app.get("/api/debug")
+def debug():
+    import os
+    current_dir = os.path.dirname(__file__)
+    root_dir = os.path.dirname(current_dir)
+    model_path = os.path.join(root_dir, "model.pkl")
+    
+    return {
+        "current_dir": current_dir,
+        "root_dir": root_dir,
+        "model_path": model_path,
+        "model_exists": os.path.exists(model_path),
+        "model_size_kb": os.path.getsize(model_path) / 1024 if os.path.exists(model_path) else 0,
+        "MODEL_loaded": MODEL is not None
+    }
 
 # ROTA RAIZ
 @app.get("/", include_in_schema=False)
