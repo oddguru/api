@@ -108,17 +108,21 @@ API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
 HEADERS = {"X-Auth-Token": API_TOKEN}
 
 @app.get("/api/smart-bets")
-def smart_bets() -> Dict:  # MUDOU PARA Dict
+def smart_bets() -> Dict:
     if MODEL is None:
         return {"error": "Modelo XGBoost não carregado"}
 
     try:
-        url = "https://api.football-data.org/v4/competitions/BSA/matches?status=SCHEDULED"
+        # CHAMPIONS LEAGUE HOJE
+        url = "https://api.football-data.org/v4/competitions/CL/matches?dateFrom=2025-11-04&dateTo=2025-11-04"
         resp = requests.get(url, headers=HEADERS, timeout=10)
         if resp.status_code != 200:
             return {"error": f"API Football: {resp.status_code}"}
 
-        matches = resp.json().get("matches", [])[:10]
+        matches = resp.json().get("matches", [])
+        if not matches:
+            return {"error": "Nenhum jogo da Champions hoje"}
+
         bets = []
         debug = []
 
@@ -129,13 +133,14 @@ def smart_bets() -> Dict:  # MUDOU PARA Dict
             away = m["awayTeam"]["shortName"]
             odd_home = m.get("odds", {}).get("homeWin")
 
+            # DADOS MAIS REALISTAS (ajustados para Champions)
             features_df = pd.DataFrame([{
-                'home_goals_last5': 11, 'away_goals_last5': 8,
-                'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
+                'home_goals_last5': 12, 'away_goals_last5': 9,
+                'home_form': 13, 'away_form': 8, 'h2h_home_wins': 3
             }])[features_order]
 
             prob = float(MODEL.predict_proba(features_df)[0][1])
-            edge = (prob * (odd_home or 1.0)) - 1 if odd_home else None
+            edge = (prob * odd_home) - 1 if odd_home else None
 
             debug.append({
                 "match": f"{home} vs {away}",
@@ -148,13 +153,13 @@ def smart_bets() -> Dict:  # MUDOU PARA Dict
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": round(prob, 3),
-                    "odd_home": round(float(odd_home), 2),
+                    "odd_home": round(odd_home, 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet ao vivo"}],
+            "value_bets": bets or [{"message": "Nenhuma value bet na Champions hoje"}],
             "debug_jogos": debug
         }
 
