@@ -19,9 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# CARREGA MODELO
+# CARREGA MODELO (CAMINHO CORRETO PARA RAIZ DO PROJETO)
+import os
 try:
-    MODEL = joblib.load("model.pkl")
+    MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model.pkl")
+    MODEL = joblib.load(MODEL_PATH)
+    print(f"Modelo carregado com sucesso: {MODEL_PATH}")
 except Exception as e:
     print(f"Erro ao carregar model.pkl: {e}")
     MODEL = None
