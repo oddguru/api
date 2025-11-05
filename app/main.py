@@ -106,16 +106,13 @@ def value_bets() -> List[Dict]:
 # =============================
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
-    if MODEL is None:
-        return {"error": "Modelo XGBoost não carregado"}
-
     try:
         headers = {
             "x-rapidapi-key": "e26c8470fcmsh04648bb073a020cp1ad6b9jsn8b15787b9ca8",
             "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
         }
 
-        # JOGOS DO DIA (FREE TIER)
+        # JOGOS DO DIA
         from datetime import datetime
         today = datetime.now().strftime("%Y-%m-%d")
         url = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={today}"
@@ -124,13 +121,11 @@ def smart_bets() -> Dict:
         if resp.status_code != 200:
             return {"error": f"API-Football: {resp.status_code}"}
 
-        fixtures = [f for f in resp.json().get("response", []) if f["league"]["id"] in [2, 71]]  # 2=Champions, 71=Brasileirão
+        fixtures = [f for f in resp.json().get("response", []) if f["league"]["id"] in [2, 71]]  # Champions + Brasileirão
         bets = []
         debug = []
 
-        features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
-
-        for fixture in fixtures[:15]:
+        for fixture in fixtures[:10]:
             home = fixture["teams"]["home"]["name"]
             away = fixture["teams"]["away"]["name"]
             fixture_id = fixture["fixture"]["id"]
@@ -141,8 +136,7 @@ def smart_bets() -> Dict:
             
             odd_home = None
             if odds_resp.status_code == 200:
-                odds_data = odds_resp.json().get("response", [])
-                for book in odds_data:
+                for book in odds_resp.json().get("response", []):
                     for bet in book.get("bookmakers", []):
                         for value in bet.get("bets", []):
                             if value["name"] == "Match Winner":
@@ -157,26 +151,21 @@ def smart_bets() -> Dict:
             if not odd_home:
                 continue
 
-            features_df = pd.DataFrame([{
-                'home_goals_last5': 11, 'away_goals_last5': 8,
-                'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
-            }])[features_order]
-
-            prob = float(MODEL.predict_proba(features_df)[0][1])
-            edge = (prob * odd_home) - 1
+            # PROBABILIDADE FIXA (70% mandante)
+            prob_home = 0.70
+            edge = (prob_home * odd_home) - 1
 
             debug.append({
                 "match": f"{home} vs {away}",
                 "odd_home": round(odd_home, 2),
-                "prob_home": round(prob, 3),
-                "edge": round(edge, 3),
-                "status": fixture["fixture"]["status"]["long"]
+                "prob_home": prob_home,
+                "edge": round(edge, 3)
             })
 
             if edge > 0.05:
                 bets.append({
                     "match": f"{home} vs {away}",
-                    "prob_home": round(prob, 3),
+                    "prob_home": prob_home,
                     "odd_home": round(odd_home, 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
@@ -185,11 +174,8 @@ def smart_bets() -> Dict:
         return {
             "value_bets": bets or [{"message": "Nenhuma value bet (odds em breve)"}],
             "debug_jogos": debug,
-            "api_source": "API-Football (Free Tier - Jogos do Dia)",
             "total_games": len(fixtures)
         }
 
     except Exception as e:
-        return {"error": f"Erro: {str(e)}"}
-        print(f"ERRO EM smart_bets: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
