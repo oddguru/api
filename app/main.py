@@ -110,48 +110,45 @@ def smart_bets() -> Dict:
         return {"error": "Modelo XGBoost não carregado"}
 
     try:
-        api_key = "3ca7df5885f44c6524d0cec01380be26"
-        
-        # DUAS LIGAS: CHAMPIONS + BRASILEIRÃO
-        sports = ["soccer_uefa_champs_league", "soccer_brazil_serie_a"]
-        all_matches = []
-        
-        for sport in sports:
-            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={api_key}&regions=eu,us&markets=h2h&oddsFormat=decimal"
-            resp = requests.get(url, timeout=15)
-            if resp.status_code == 200:
-                all_matches.extend(resp.json())
+        # API-FOOTBALL RAPIDAPI (SUA KEY)
+        headers = {
+            "x-rapidapi-key": "e26c8470fcmsh04648bb073a020cp1ad6b9jsn8b15787b9ca8",
+            "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
+        }
 
-        if not all_matches:
-            return {
-                "value_bets": [{"message": "Nenhum jogo com odds disponível no momento"}],
-                "debug_jogos": [],
-                "api_source": "The Odds API (free)"
-            }
+        # JOGOS AO VIVO DA CHAMPIONS LEAGUE
+        url_live = "https://api-football-v1.p.rapidapi.com/v3/fixtures?live=2"  # 2 = Champions
+        resp_live = requests.get(url_live, headers=headers, timeout=10)
+        
+        if resp_live.status_code != 200:
+            return {"error": f"API-Football Live: {resp_live.status_code}"}
 
+        fixtures = resp_live.json().get("response", [])[:10]
         bets = []
         debug = []
 
         features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
-        for match in all_matches[:15]:
-            home = match["home_team"]
-            away = match["away_team"]
-            odd_home = None
+        for fixture in fixtures:
+            home = fixture["teams"]["home"]["name"]
+            away = fixture["teams"]["away"]["name"]
+            fixture_id = fixture["fixture"]["id"]
 
-            # Prioriza Bet365 ou Pinnacle
-            for book in match.get("bookmakers", []):
-                if book["key"] in ["bet365", "pinnacle"]:
-                    for market in book.get("markets", []):
-                        if market["key"] == "h2h":
-                            for outcome in market.get("outcomes", []):
-                                if outcome["name"] == home:
-                                    odd_home = outcome["price"]
-                                    break
-                            if odd_home:
+            # PEGA ODDS DO JOGO
+            odds_url = f"https://api-football-v1.p.rapidapi.com/v3/odds?fixture={fixture_id}"
+            odds_resp = requests.get(odds_url, headers=headers, timeout=5)
+            
+            odd_home = None
+            if odds_resp.status_code == 200:
+                odds_data = odds_resp.json().get("response", [])
+                for book in odds_data:
+                    for bet in book.get("bookmakers", []):
+                        for value in bet.get("bets", []):
+                            if value["name"] == "Match Winner" and value["values"][0]["value"] == "Home":
+                                odd_home = float(value["values"][0]["odd"])
                                 break
-                    if odd_home:
-                        break
+                        if odd_home: break
+                    if odd_home: break
 
             if not odd_home:
                 continue
@@ -182,10 +179,10 @@ def smart_bets() -> Dict:
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet (aguardando jogos próximos)"}],
+            "value_bets": bets or [{"message": "Nenhuma value bet (aguardando odds ao vivo)"}],
             "debug_jogos": debug,
-            "api_source": "The Odds API (Champions + Brasileirão)",
-            "total_games": len(all_matches)
+            "api_source": "API-Football (RapidAPI)",
+            "total_live_games": len(fixtures)
         }
 
     except Exception as e:
