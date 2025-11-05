@@ -104,6 +104,9 @@ def value_bets() -> List[Dict]:
 # =============================
 # SMART BETS AO VIVO (SEM NUMPY)
 # =============================
+# REMOVA O XGBoost
+MODEL = None
+
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
     try:
@@ -112,16 +115,21 @@ def smart_bets() -> Dict:
             "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
         }
 
-        # JOGOS AO VIVO (GRÁTIS)
-        url = "https://api-football-v1.p.rapidapi.com/v3/fixtures?live=all"
+        # ENDPOINT GRÁTIS: JOGOS DO DIA
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        url = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={today}"
         resp = requests.get(url, headers=headers, timeout=10)
-        
+
         if resp.status_code != 200:
-            return {"error": f"API-Football Live: {resp.status_code}"}
+            return {"error": f"API-Football: {resp.status_code}"}
 
         fixtures = resp.json().get("response", [])
+        # Filtra Champions e Brasileirão
+        fixtures = [f for f in fixtures if f["league"]["id"] in [2, 71]]
+        
         if not fixtures:
-            return {"value_bets": [{"message": "Nenhum jogo ao vivo no momento"}]}
+            return {"value_bets": [{"message": "Nenhum jogo hoje"}]}
 
         bets = []
         debug = []
@@ -130,16 +138,31 @@ def smart_bets() -> Dict:
             home = fixture["teams"]["home"]["name"]
             away = fixture["teams"]["away"]["name"]
             status = fixture["fixture"]["status"]["long"]
+            fixture_id = fixture["fixture"]["id"]
 
-            # Probabilidade fixa (MVP)
+            # TENTA PEGAR ODDS DO PRÓPRIO FIXTURE (GRÁTIS)
+            odd_home = None
+            if "bookmakers" in fixture and fixture["bookmakers"]:
+                for book in fixture["bookmakers"]:
+                    for bet in book.get("bets", []):
+                        if bet["name"] == "Match Winner":
+                            for v in bet["values"]:
+                                if v["value"] == "Home":
+                                    odd_home = float(v["odd"])
+                                    break
+                    if odd_home: break
+
+            # Se não tiver, usa 2.00 (fallback)
+            if not odd_home:
+                odd_home = 2.00
+
             prob_home = 0.70
-            odd_home = 2.00  # Default se não tiver odds
             edge = (prob_home * odd_home) - 1
 
             debug.append({
                 "match": f"{home} vs {away}",
                 "status": status,
-                "odd_home": odd_home,
+                "odd_home": round(odd_home, 2),
                 "prob_home": prob_home,
                 "edge": round(edge, 3)
             })
@@ -148,15 +171,15 @@ def smart_bets() -> Dict:
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": prob_home,
-                    "odd_home": odd_home,
+                    "odd_home": round(odd_home, 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet ao vivo"}],
+            "value_bets": bets or [{"message": "Nenhuma value bet (edge < 5%)"}],
             "debug_jogos": debug,
-            "total_live_games": len(fixtures)
+            "total_games": len(fixtures)
         }
 
     except Exception as e:
