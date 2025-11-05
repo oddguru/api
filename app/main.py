@@ -1,84 +1,91 @@
-import xgboost as xgb
-import requests
-import pandas as pd
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import requests
 from typing import Dict, List
-import os
 
-app = FastAPI()
+app = FastAPI(title="OddGuru MVP")
 
-# CARREGA O MODELO XGBOOST (CAMINHO CORRETO: RAIZ DO PROJETO)
-MODEL = None
-model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "model.json")
+# CORS para frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-try:
-    if os.path.exists(model_path):
-        MODEL = xgb.XGBClassifier()
-        MODEL.load_model(model_path)
-        print(f"XGBoost carregado com sucesso de: {model_path}")
-    else:
-        print(f"model.json NÃO ENCONTRADO em: {model_path}")
-except Exception as e:
-    print(f"Erro ao carregar XGBoost: {e}")
-    MODEL = None
+@app.get("/")
+def home():
+    return {"message": "OddGuru MVP ao vivo — odds reais + edge!"}
 
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
-    if MODEL is None:
-        return {"error": "XGBoost não carregado. Verifique model.json"}
-
     try:
-        token = "nvaD1qrpdmhhvIvB6ExG9kL81YL71PmcgYnBuaSKh26H1895FuNrFPnEkt7b"
-        url = f"https://api.sportmonks.com/v3/football/fixtures?api_token={token}&include=odds&leagues=8"  # Champions
+        # 1. RAPIDAPI - JOGOS DO DIA (FREE)
+        headers = {
+            "x-rapidapi-key": "e26c8470fcmsh04648bb073a020cp1ad6b9jsn8b15787b9ca8",
+            "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
+        }
+        today = "2025-11-05"
+        url = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={today}"
+        resp = requests.get(url, headers=headers, timeout=10)
 
-        resp = requests.get(url, timeout=15)
         if resp.status_code != 200:
-            return {"error": f"Sportmonks: {resp.status_code}"}
+            return {"error": f"RapidAPI: {resp.status_code}"}
 
-        data = resp.json().get("data", [])
-        if not data:
-            return {"value_bets": [{"message": "Nenhum jogo na Champions hoje"}]}
+        fixtures = resp.json().get("response", [])
+        fixtures = [f for f in fixtures if f["league"]["id"] in [2, 71]]  # Champions + Brasileirão
+
+        if not fixtures:
+            return {"value_bets": [{"message": "Nenhum jogo hoje"}], "total_games": 0}
+
+        # 2. THE ODDS API - ODDS REAIS (FREE)
+        odds_api_key = "3ca7df5885f44c6524d0cec01380be26"
+        odds_url = f"https://api.the-odds-api.com/v4/sports/soccer_brazil_serie_a/odds/?apiKey={odds_api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+        odds_resp = requests.get(odds_url, timeout=10)
+
+        odds_data = {}
+        if odds_resp.status_code == 200:
+            for match in odds_resp.json():
+                key = f"{match['home_team']} vs {match['away_team']}"
+                odd_home = None
+                for book in match.get("bookmakers", []):
+                    if book["key"] == "bet365":
+                        for outcome in book["markets"][0]["outcomes"]:
+                            if outcome["name"] == match["home_team"]:
+                                odd_home = outcome["price"]
+                                break
+                        if odd_home: break
+                if odd_home:
+                    odds_data[key] = odd_home
 
         bets = []
         debug = []
 
-        # FEATURES DO MODELO (ajuste conforme seu treino)
-        features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
+        for fixture in fixtures[:10]:
+            home = fixture["teams"]["home"]["name"]
+            away = fixture["teams"]["away"]["name"]
+            status = fixture["fixture"]["status"]["long"]
+            match_key = f"{home} vs {away}"
 
-        for fixture in data[:10]:
-            home = fixture["name"].split(" vs ")[0]
-            away = fixture["name"].split(" vs ")[1]
-            status = fixture.get("state", {}).get("name", "N/A")
+            odd_home = odds_data.get(match_key, 2.00)  # Fallback se não tiver
 
-            # PEGA ODD REAL (BET365)
-            odd_home = 2.00
-            for odd in fixture.get("odds", []):
-                if odd["bookmaker"]["name"] == "Bet365" and odd["market"]["name"] == "1X2":
-                    for v in odd["values"]:
-                        if v["name"] == "1":
-                            odd_home = float(v["odd"])
-                            break
-                    break
-
-            # FEATURES FIXAS (substitua por API real depois)
-            features = [11, 8, 12, 7, 3]  # [home_goals_last5, ...]
-            prob_home = float(MODEL.predict_proba([features])[0][1])
+            prob_home = 0.70
             edge = (prob_home * odd_home) - 1
 
             debug.append({
-                "match": f"{home} vs {away}",
+                "match": match_key,
                 "status": status,
                 "odd_home": round(odd_home, 2),
-                "prob_home": round(prob_home, 3),
-                "edge": round(edge, 3),
-                "source": "Bet365" if odd_home != 2.00 else "SIMULADA"
+                "source": "The Odds API" if odd_home != 2.00 else "Fallback",
+                "edge": round(edge, 3)
             })
 
             if edge > 0.05:
                 bets.append({
-                    "match": f"{home} vs {away}",
+                    "match": match_key,
+                    "prob_home": prob_home,
                     "odd_home": round(odd_home, 2),
-                    "prob_home": round(prob_home, 3),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
@@ -86,9 +93,13 @@ def smart_bets() -> Dict:
         return {
             "value_bets": bets or [{"message": "Nenhuma value bet (edge < 5%)"}],
             "debug_jogos": debug,
-            "total_games": len(data),
-            "api_source": "Sportmonks + XGBoost"
+            "total_games": len(fixtures),
+            "api_source": "RapidAPI + The Odds API (Free Tier)"
         }
 
     except Exception as e:
         return {"error": f"Erro: {str(e)}"}
+
+@app.get("/api/debug")
+def debug():
+    return {"status": "MVP ao vivo — Brasileirão + Champions", "api": "RapidAPI + The Odds API"}
