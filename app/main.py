@@ -117,7 +117,7 @@ def smart_bets() -> Dict:
         all_matches = []
         
         for sport in sports:
-            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={api_key}&regions=eu,us&markets=h2h&oddsFormat=decimal"
+            url = f"https://api.the-odds-api.com/v4/sports/soccer_uefa_champs_league/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
             resp = requests.get(url, timeout=15)
             if resp.status_code == 200:
                 all_matches.extend(resp.json())
