@@ -112,51 +112,37 @@ def smart_bets() -> Dict:
             "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
         }
 
-        # JOGOS DO DIA
-        from datetime import datetime
-        today = datetime.now().strftime("%Y-%m-%d")
-        url = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={today}"
+        # JOGOS AO VIVO (GRÁTIS)
+        url = "https://api-football-v1.p.rapidapi.com/v3/fixtures?live=all"
         resp = requests.get(url, headers=headers, timeout=10)
         
         if resp.status_code != 200:
-            return {"error": f"API-Football: {resp.status_code}"}
+            return {"error": f"API-Football Live: {resp.status_code}"}
 
-        fixtures = [f for f in resp.json().get("response", []) if f["league"]["id"] in [2, 71]]  # Champions + Brasileirão
+        fixtures = resp.json().get("response", [])[:10]
+        if not fixtures:
+            return {"error": "Nenhum jogo ao vivo no momento"}
+
         bets = []
         debug = []
 
-        for fixture in fixtures[:10]:
+        for fixture in fixtures:
             home = fixture["teams"]["home"]["name"]
             away = fixture["teams"]["away"]["name"]
-            fixture_id = fixture["fixture"]["id"]
+            status = fixture["fixture"]["status"]["long"]
 
-            # PEGA ODDS
-            odds_url = f"https://api-football-v1.p.rapidapi.com/v3/odds?fixture={fixture_id}"
-            odds_resp = requests.get(odds_url, headers=headers, timeout=5)
-            
-            odd_home = None
-            if odds_resp.status_code == 200:
-                for book in odds_resp.json().get("response", []):
-                    for bet in book.get("bookmakers", []):
-                        for value in bet.get("bets", []):
-                            if value["name"] == "Match Winner":
-                                for v in value["values"]:
-                                    if v["value"] == "Home":
-                                        odd_home = float(v["odd"])
-                                        break
-                                if odd_home: break
-                        if odd_home: break
-                    if odd_home: break
-
+            # ODDS GRÁTIS (só H2H do fixture)
+            odd_home = fixture.get("odds", {}).get("homeWin", None)
             if not odd_home:
-                continue
+                odd_home = 2.00  # Default se não tiver
 
-            # PROBABILIDADE FIXA (70% mandante)
+            # Probabilidade fixa para teste (ajustar depois)
             prob_home = 0.70
             edge = (prob_home * odd_home) - 1
 
             debug.append({
                 "match": f"{home} vs {away}",
+                "status": status,
                 "odd_home": round(odd_home, 2),
                 "prob_home": prob_home,
                 "edge": round(edge, 3)
@@ -172,9 +158,14 @@ def smart_bets() -> Dict:
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet (odds em breve)"}],
+            "value_bets": bets or [{"message": "Nenhuma value bet ao vivo"}],
             "debug_jogos": debug,
-            "total_games": len(fixtures)
+            "total_live_games": len(fixtures)
+        }
+
+    except Exception as e:
+        print(f"ERRO EM smart_bets: {str(e)}")
+        return {"error": f"Erro: {str(e)}"}
         }
 
     except Exception as e:
