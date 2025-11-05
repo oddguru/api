@@ -110,31 +110,32 @@ def smart_bets() -> Dict:
         return {"error": "Modelo XGBoost não carregado"}
 
     try:
-        # API-FOOTBALL RAPIDAPI (SUA KEY)
         headers = {
             "x-rapidapi-key": "e26c8470fcmsh04648bb073a020cp1ad6b9jsn8b15787b9ca8",
             "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
         }
 
-        # JOGOS AO VIVO DA CHAMPIONS LEAGUE
-        url_live = "https://api-football-v1.p.rapidapi.com/v3/fixtures?live=all"
-        resp_live = requests.get(url_live, headers=headers, timeout=10)
+        # JOGOS DO DIA (FREE TIER)
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        url = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={today}"
+        resp = requests.get(url, headers=headers, timeout=10)
         
-        if resp_live.status_code != 200:
-            return {"error": f"API-Football Live: {resp_live.status_code}"}
+        if resp.status_code != 200:
+            return {"error": f"API-Football: {resp.status_code}"}
 
-        fixtures = resp_live.json().get("response", [])[:10]
+        fixtures = [f for f in resp.json().get("response", []) if f["league"]["id"] in [2, 71]]  # 2=Champions, 71=Brasileirão
         bets = []
         debug = []
 
         features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
-        for fixture in fixtures:
+        for fixture in fixtures[:15]:
             home = fixture["teams"]["home"]["name"]
             away = fixture["teams"]["away"]["name"]
             fixture_id = fixture["fixture"]["id"]
 
-            # PEGA ODDS DO JOGO
+            # PEGA ODDS
             odds_url = f"https://api-football-v1.p.rapidapi.com/v3/odds?fixture={fixture_id}"
             odds_resp = requests.get(odds_url, headers=headers, timeout=5)
             
@@ -144,16 +145,18 @@ def smart_bets() -> Dict:
                 for book in odds_data:
                     for bet in book.get("bookmakers", []):
                         for value in bet.get("bets", []):
-                            if value["name"] == "Match Winner" and value["values"][0]["value"] == "Home":
-                                odd_home = float(value["values"][0]["odd"])
-                                break
+                            if value["name"] == "Match Winner":
+                                for v in value["values"]:
+                                    if v["value"] == "Home":
+                                        odd_home = float(v["odd"])
+                                        break
+                                if odd_home: break
                         if odd_home: break
                     if odd_home: break
 
             if not odd_home:
                 continue
 
-            # DADOS FIXOS (ajustar depois com stats reais)
             features_df = pd.DataFrame([{
                 'home_goals_last5': 11, 'away_goals_last5': 8,
                 'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
@@ -166,7 +169,8 @@ def smart_bets() -> Dict:
                 "match": f"{home} vs {away}",
                 "odd_home": round(odd_home, 2),
                 "prob_home": round(prob, 3),
-                "edge": round(edge, 3)
+                "edge": round(edge, 3),
+                "status": fixture["fixture"]["status"]["long"]
             })
 
             if edge > 0.05:
@@ -179,12 +183,13 @@ def smart_bets() -> Dict:
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet (aguardando odds ao vivo)"}],
+            "value_bets": bets or [{"message": "Nenhuma value bet (odds em breve)"}],
             "debug_jogos": debug,
-            "api_source": "API-Football (RapidAPI)",
-            "total_live_games": len(fixtures)
+            "api_source": "API-Football (Free Tier - Jogos do Dia)",
+            "total_games": len(fixtures)
         }
 
     except Exception as e:
+        return {"error": f"Erro: {str(e)}"}
         print(f"ERRO EM smart_bets: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
