@@ -7,19 +7,20 @@ import os
 
 app = FastAPI()
 
-# CARREGA O MODELO XGBOOST
+# CARREGA O MODELO XGBOOST (CAMINHO CORRETO: RAIZ DO PROJETO)
 MODEL = None
-model_path = os.path.join(os.path.dirname(__file__), "model.json")
+model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "model.json")
 
 try:
     if os.path.exists(model_path):
         MODEL = xgb.XGBClassifier()
         MODEL.load_model(model_path)
-        print("XGBoost carregado com sucesso!")
+        print(f"XGBoost carregado com sucesso de: {model_path}")
     else:
-        print(f"model.json não encontrado em: {model_path}")
+        print(f"model.json NÃO ENCONTRADO em: {model_path}")
 except Exception as e:
     print(f"Erro ao carregar XGBoost: {e}")
+    MODEL = None
 
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
