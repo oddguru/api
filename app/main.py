@@ -104,52 +104,63 @@ def value_bets() -> List[Dict]:
 # =============================
 # SMART BETS AO VIVO (SEM NUMPY)
 # =============================
-API_TOKEN = "69a4062b62f0434d966d5aad2e78a1df"
-HEADERS = {"X-Auth-Token": API_TOKEN}
-
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
     if MODEL is None:
         return {"error": "Modelo XGBoost não carregado"}
 
     try:
-        # CHAMPIONS LEAGUE HOJE
-        url = "https://api.football-data.org/v4/competitions/CL/matches?status=LIVE"
-        resp = requests.get(url, headers=HEADERS, timeout=10)
+        # THE ODDS API (FREE 500 req/mês)
+        api_key = "3ca7df5885f44c6524d0cec01380be26"
+        url = f"https://api.the-odds-api.com/v4/sports/soccer_champions_league/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+        resp = requests.get(url, timeout=15)
+        
         if resp.status_code != 200:
-            return {"error": f"API Football: {resp.status_code}"}
+            return {"error": f"The Odds API: {resp.status_code}"}
 
-        matches = resp.json().get("matches", [])
-        if not matches:
-            return {"error": "Nenhum jogo da Champions hoje"}
-
+        matches = resp.json()
         bets = []
         debug = []
 
         features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
-        for m in matches:
-            home = m["homeTeam"]["shortName"]
-            away = m["awayTeam"]["shortName"]
-            odd_home = m.get("odds", {}).get("homeWin")
+        for match in matches[:10]:
+            home = match["home_team"]
+            away = match["away_team"]
+            odd_home = None
 
-            # DADOS MAIS REALISTAS (ajustados para Champions)
+            # PEGA A MELHOR ODD HOME (média ou Bet365)
+            for book in match.get("bookmakers", []):
+                if book["key"] == "bet365":  # Prioriza Bet365
+                    for market in book.get("markets", []):
+                        if market["key"] == "h2h":
+                            for outcome in market.get("outcomes", []):
+                                if outcome["name"] == home:
+                                    odd_home = outcome["price"]
+                                    break
+                            if odd_home: break
+                    if odd_home: break
+
+            if not odd_home:
+                continue  # Pula se não tiver odd
+
+            # DADOS FIXOS (ajustar depois com API-Football stats)
             features_df = pd.DataFrame([{
-                'home_goals_last5': 12, 'away_goals_last5': 9,
-                'home_form': 13, 'away_form': 8, 'h2h_home_wins': 3
+                'home_goals_last5': 12, 'away_goals_last5': 8,
+                'home_form': 13, 'away_form': 7, 'h2h_home_wins': 3
             }])[features_order]
 
             prob = float(MODEL.predict_proba(features_df)[0][1])
-            edge = (prob * odd_home) - 1 if odd_home else None
+            edge = (prob * odd_home) - 1
 
             debug.append({
                 "match": f"{home} vs {away}",
-                "odd_home": odd_home,
+                "odd_home": round(odd_home, 2),
                 "prob_home": round(prob, 3),
-                "edge": round(edge, 3) if edge is not None else None
+                "edge": round(edge, 3)
             })
 
-            if odd_home and edge > 0.05:
+            if edge > 0.05:
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": round(prob, 3),
@@ -159,8 +170,10 @@ def smart_bets() -> Dict:
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet na Champions hoje"}],
-            "debug_jogos": debug
+            "value_bets": bets or [{"message": "Nenhuma value bet (aguardando jogos com odds)"}],
+            "debug_jogos": debug,
+            "api_source": "The Odds API (free)",
+            "requests_remaining": resp.headers.get("X-Requests-Remaining", "N/A")
         }
 
     except Exception as e:
