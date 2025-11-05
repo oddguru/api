@@ -117,25 +117,29 @@ def smart_bets() -> Dict:
         all_matches = []
         
         for sport in sports:
-            url = f"https://api.the-odds-api.com/v4/sports/soccer_uefa_champs_league/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={api_key}&regions=eu,us&markets=h2h&oddsFormat=decimal"
             resp = requests.get(url, timeout=15)
             if resp.status_code == 200:
                 all_matches.extend(resp.json())
 
         if not all_matches:
-            return {"error": "Nenhum jogo com odds disponível no momento"}
+            return {
+                "value_bets": [{"message": "Nenhum jogo com odds disponível no momento"}],
+                "debug_jogos": [],
+                "api_source": "The Odds API (free)"
+            }
 
         bets = []
         debug = []
 
         features_order = ['home_goals_last5', 'away_goals_last5', 'home_form', 'away_form', 'h2h_home_wins']
 
-        for match in all_matches[:15]:  # 15 jogos no máximo
+        for match in all_matches[:15]:
             home = match["home_team"]
             away = match["away_team"]
             odd_home = None
 
-            # PEGA ODD DO MANDANTE (prioriza Bet365)
+            # Prioriza Bet365 ou Pinnacle
             for book in match.get("bookmakers", []):
                 if book["key"] in ["bet365", "pinnacle"]:
                     for market in book.get("markets", []):
@@ -144,12 +148,15 @@ def smart_bets() -> Dict:
                                 if outcome["name"] == home:
                                     odd_home = outcome["price"]
                                     break
-                            if odd_home: break
-                    if odd_home: break
+                            if odd_home:
+                                break
+                    if odd_home:
+                        break
 
             if not odd_home:
                 continue
 
+            # DADOS FIXOS (ajustar depois com stats reais)
             features_df = pd.DataFrame([{
                 'home_goals_last5': 11, 'away_goals_last5': 8,
                 'home_form': 12, 'away_form': 7, 'h2h_home_wins': 3
@@ -162,8 +169,7 @@ def smart_bets() -> Dict:
                 "match": f"{home} vs {away}",
                 "odd_home": round(odd_home, 2),
                 "prob_home": round(prob, 3),
-                "edge": round(edge, 3),
-                "sport": match["sport_nice"]
+                "edge": round(edge, 3)
             })
 
             if edge > 0.05:
@@ -179,13 +185,7 @@ def smart_bets() -> Dict:
             "value_bets": bets or [{"message": "Nenhuma value bet (aguardando jogos próximos)"}],
             "debug_jogos": debug,
             "api_source": "The Odds API (Champions + Brasileirão)",
-            "total_games": len(all_matches),
-            "requests_remaining": "N/A"
-        }
-
-    except Exception as e:
-        print(f"ERRO EM smart_bets: {str(e)}")
-        return {"error": f"Erro: {str(e)}"}
+            "total_games": len(all_matches)
         }
 
     except Exception as e:
