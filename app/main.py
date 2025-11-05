@@ -119,31 +119,27 @@ def smart_bets() -> Dict:
         if resp.status_code != 200:
             return {"error": f"API-Football Live: {resp.status_code}"}
 
-        fixtures = resp.json().get("response", [])[:10]
+        fixtures = resp.json().get("response", [])
         if not fixtures:
-            return {"error": "Nenhum jogo ao vivo no momento"}
+            return {"value_bets": [{"message": "Nenhum jogo ao vivo no momento"}]}
 
         bets = []
         debug = []
 
-        for fixture in fixtures:
+        for fixture in fixtures[:10]:
             home = fixture["teams"]["home"]["name"]
             away = fixture["teams"]["away"]["name"]
             status = fixture["fixture"]["status"]["long"]
 
-            # ODDS GRÁTIS (só H2H do fixture)
-            odd_home = fixture.get("odds", {}).get("homeWin", None)
-            if not odd_home:
-                odd_home = 2.00  # Default se não tiver
-
-            # Probabilidade fixa para teste (ajustar depois)
+            # Probabilidade fixa (MVP)
             prob_home = 0.70
+            odd_home = 2.00  # Default se não tiver odds
             edge = (prob_home * odd_home) - 1
 
             debug.append({
                 "match": f"{home} vs {away}",
                 "status": status,
-                "odd_home": round(odd_home, 2),
+                "odd_home": odd_home,
                 "prob_home": prob_home,
                 "edge": round(edge, 3)
             })
@@ -152,7 +148,7 @@ def smart_bets() -> Dict:
                 bets.append({
                     "match": f"{home} vs {away}",
                     "prob_home": prob_home,
-                    "odd_home": round(odd_home, 2),
+                    "odd_home": odd_home,
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
@@ -161,11 +157,6 @@ def smart_bets() -> Dict:
             "value_bets": bets or [{"message": "Nenhuma value bet ao vivo"}],
             "debug_jogos": debug,
             "total_live_games": len(fixtures)
-        }
-
-    except Exception as e:
-        print(f"ERRO EM smart_bets: {str(e)}")
-        return {"error": f"Erro: {str(e)}"}
         }
 
     except Exception as e:
