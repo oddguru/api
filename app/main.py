@@ -112,7 +112,7 @@ def smart_bets() -> Dict:
     try:
         # THE ODDS API (FREE 500 req/mês)
         api_key = "3ca7df5885f44c6524d0cec01380be26"
-        url = f"https://api.the-odds-api.com/v4/sports/soccer_champions_league/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+        url = f"https://api.the-odds-api.com/v4/sports/soccer_uefa_champs_league/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
         resp = requests.get(url, timeout=15)
         
         if resp.status_code != 200:
