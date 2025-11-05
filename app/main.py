@@ -105,81 +105,70 @@ def value_bets() -> List[Dict]:
 # SMART BETS AO VIVO (SEM NUMPY)
 # =============================
 # REMOVA O XGBoost
+# REMOVA TUDO SOBRE XGBoost
 MODEL = None
 
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
     try:
-        headers = {
-            "x-rapidapi-key": "e26c8470fcmsh04648bb073a020cp1ad6b9jsn8b15787b9ca8",
-            "x-rapidapi-host": "api-football-v1.p.rapidapi.com"
-        }
-
-        # ENDPOINT GRÁTIS: JOGOS DO DIA
-        from datetime import datetime
-        today = datetime.now().strftime("%Y-%m-%d")
-        url = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={today}"
-        resp = requests.get(url, headers=headers, timeout=10)
-
-        if resp.status_code != 200:
-            return {"error": f"API-Football: {resp.status_code}"}
-
-        fixtures = resp.json().get("response", [])
-        # Filtra Champions e Brasileirão
-        fixtures = [f for f in fixtures if f["league"]["id"] in [2, 71]]
+        api_key = "3ca7df5885f44c6524d0cec01380be26"
         
-        if not fixtures:
-            return {"value_bets": [{"message": "Nenhum jogo hoje"}]}
+        # CHAMPIONS LEAGUE (ODDS REAIS)
+        url = f"https://api.the-odds-api.com/v4/sports/soccer_uefa_champs_league/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+        resp = requests.get(url, timeout=15)
+        
+        if resp.status_code != 200:
+            return {"error": f"The Odds API: {resp.status_code}"}
+
+        matches = resp.json()
+        if not matches:
+            return {"value_bets": [{"message": "Nenhum jogo com odds"}]}
 
         bets = []
         debug = []
 
-        for fixture in fixtures[:10]:
-            home = fixture["teams"]["home"]["name"]
-            away = fixture["teams"]["away"]["name"]
-            status = fixture["fixture"]["status"]["long"]
-            fixture_id = fixture["fixture"]["id"]
-
-            # TENTA PEGAR ODDS DO PRÓPRIO FIXTURE (GRÁTIS)
+        for match in matches[:10]:
+            home = match["home_team"]
+            away = match["away_team"]
             odd_home = None
-            if "bookmakers" in fixture and fixture["bookmakers"]:
-                for book in fixture["bookmakers"]:
-                    for bet in book.get("bets", []):
-                        if bet["name"] == "Match Winner":
-                            for v in bet["values"]:
-                                if v["value"] == "Home":
-                                    odd_home = float(v["odd"])
+
+            # PEGA ODD DA BET365
+            for book in match.get("bookmakers", []):
+                if book["key"] == "bet365":
+                    for market in book.get("markets", []):
+                        if market["key"] == "h2h":
+                            for outcome in market.get("outcomes", []):
+                                if outcome["name"] == home:
+                                    odd_home = outcome["price"]
                                     break
                     if odd_home: break
+                if odd_home: break
 
-            # Se não tiver, usa 2.00 (fallback)
             if not odd_home:
-                odd_home = 2.00
+                continue
 
             prob_home = 0.70
             edge = (prob_home * odd_home) - 1
 
             debug.append({
                 "match": f"{home} vs {away}",
-                "status": status,
                 "odd_home": round(odd_home, 2),
-                "prob_home": prob_home,
                 "edge": round(edge, 3)
             })
 
             if edge > 0.05:
                 bets.append({
                     "match": f"{home} vs {away}",
-                    "prob_home": prob_home,
                     "odd_home": round(odd_home, 2),
                     "edge": round(edge, 3),
                     "suggestion": "APOSTE NO MANDANTE!"
                 })
 
         return {
-            "value_bets": bets or [{"message": "Nenhuma value bet (edge < 5%)"}],
+            "value_bets": bets or [{"message": "Nenhuma value bet"}],
             "debug_jogos": debug,
-            "total_games": len(fixtures)
+            "total_games": len(matches),
+            "requests_remaining": resp.headers.get("X-Requests-Remaining", "N/A")
         }
 
     except Exception as e:
