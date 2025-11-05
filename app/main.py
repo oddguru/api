@@ -117,7 +117,7 @@ def smart_bets() -> Dict:
         }
 
         # JOGOS AO VIVO DA CHAMPIONS LEAGUE
-        url_live = "https://api-football-v1.p.rapidapi.com/v3/fixtures?live=2"  # 2 = Champions
+        url_live = "https://api-football-v1.p.rapidapi.com/v3/fixtures?live=all"
         resp_live = requests.get(url_live, headers=headers, timeout=10)
         
         if resp_live.status_code != 200:
