@@ -5,14 +5,18 @@
   <meta charset="utf-8">
   <style>
     body { font-family: Arial; text-align: center; background: #111; color: #0f0; padding: 20px; }
-    .bet { background: #0a0; color: #000; padding: 15px; margin: 10px; border-radius: 10px; font-weight: bold; }
     .title { color: #0ff; font-size: 2em; }
+    .subtitle { color: #0f0; font-size: 1em; }
+    .value-bet { background: #0a0; color: #000; padding: 15px; margin: 10px; border-radius: 10px; font-weight: bold; }
+    .no-edge { background: #333; color: #aaa; padding: 10px; margin: 5px; border-radius: 8px; font-size: 0.9em; }
+    .edge-positive { color: #0f0; font-weight: bold; }
+    .edge-negative { color: #f55; }
     .time { color: #ff0; font-size: 0.9em; }
   </style>
 </head>
 <body>
   <h1 class="title">OddGURU</h1>
-  <p>Atualizado em tempo real — 06/11/2025</p>
+  <p class="subtitle">Atualizado em tempo real — 06/11/2025</p>
   <div id="bets">Carregando value bets...</div>
 
   <script>
@@ -21,15 +25,35 @@
       .then(d => {
         const el = document.getElementById('bets');
         el.innerHTML = '';
-        d.value_bets.forEach(b => {
-          el.innerHTML += `
-            <div class="bet">
-              ${b.match} <span class="time">(${b.status})</span><br>
-              Odd: ${b.odd_home} | Edge: +${(b.edge*100).toFixed(1)}%<br>
-              <strong>${b.suggestion}</strong>
-            </div>`;
-        });
-        if (d.value_bets.length === 0) el.innerHTML = '<p style="color:#aaa">Aguardando edge > 5%...</p>';
+
+        // VALUE BETS (EDGE > 5%)
+        if (d.value_bets.length > 0) {
+          d.value_bets.forEach(b => {
+            el.innerHTML += `
+              <div class="value-bet">
+                ${b.match} <span class="time">(${b.status})</span><br>
+                Odd: ${b.odd_home} | Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span><br>
+                <strong>${b.suggestion}</strong>
+              </div>`;
+          });
+        }
+
+        // JOGOS SEM VALUE BET (EDGE ≤ 5%)
+        const noEdgeGames = d.all_games.filter(g => g.edge <= 0.05);
+        if (noEdgeGames.length > 0) {
+          el.innerHTML += '<p style="color:#666; margin-top:20px;">Outros jogos (sem value):</p>';
+          noEdgeGames.forEach(g => {
+            el.innerHTML += `
+              <div class="no-edge">
+                ${g.match} <span class="time">(${g.status})</span><br>
+                Odd: ${g.odd_home} | Edge: <span class="edge-negative">${(g.edge*100).toFixed(1)}%</span>
+              </div>`;
+          });
+        }
+
+        if (d.value_bets.length === 0 && noEdgeGames.length === 0) {
+          el.innerHTML = '<p style="color:#aaa">Aguardando jogos...</p>';
+        }
       })
       .catch(() => el.innerHTML = '<p style="color:red">Erro na API</p>');
   </script>
