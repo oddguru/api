@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from typing import Dict
-import os
 
 app = FastAPI(title="OddGuru MVP")
 
@@ -25,34 +23,37 @@ JOGOS_HOJE = [
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
     prob_home = 0.70
-    bets = []
-    debug = []
+    value_bets = []
+    all_games = []
 
     for jogo in JOGOS_HOJE:
         odd_home = jogo["odd_home"]
         edge = (prob_home * odd_home) - 1
 
-        debug.append({
+        game_info = {
             "match": f"{jogo['home']} vs {jogo['away']}",
             "status": jogo["status"],
             "odd_home": odd_home,
             "edge": round(edge, 3)
-        })
+        }
+        all_games.append(game_info)
 
+        # SÓ ADICIONA COMO VALUE BET SE EDGE > 5%
         if edge > 0.05:
-            bets.append({
+            value_bets.append({
                 "match": f"{jogo['home']} vs {jogo['away']}",
+                "status": jogo["status"],
                 "odd_home": odd_home,
                 "edge": round(edge, 3),
                 "suggestion": "APOSTE NO MANDANTE!"
             })
 
     return {
-        "value_bets": bets,
-        "debug_jogos": debug,
+        "value_bets": value_bets,
+        "all_games": all_games,  # Todos os jogos (com edge negativo também)
         "total_games": len(JOGOS_HOJE),
         "api_source": "Odds reais (06/11/2025)"
     }
 
-# SERVIR FRONTEND (PRIORIDADE MÁXIMA)
+# SERVIR FRONTEND
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
