@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from typing import Dict
+import os
 
 app = FastAPI(title="OddGuru MVP")
 
@@ -20,17 +22,9 @@ JOGOS_HOJE = [
     {"home": "Palmeiras", "away": "Santos", "odd_home": 1.40, "status": "21:30"},
 ]
 
-@app.get("/")
-def home():
-    return {"message": "OddGuru MVP ao vivo — odds reais de hoje!"}
-
-@app.get("/api/debug")
-def debug():
-    return {"status": "MVP ativo", "jogos": "3 jogos reais", "odds": "1X2 ao vivo"}
-
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
-    prob_home = 0.70  # MVP (XGBoost V2)
+    prob_home = 0.70
     bets = []
     debug = []
 
@@ -60,5 +54,5 @@ def smart_bets() -> Dict:
         "api_source": "Odds reais (06/11/2025)"
     }
 
-# SERVIR FRONTEND
+# SERVIR FRONTEND (PRIORIDADE MÁXIMA)
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
