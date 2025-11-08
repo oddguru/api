@@ -3,7 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import Dict, List
 import datetime
+import json
+import os
+import atexit
 
+# === APP PRIMEIRO (OBRIGATÓRIO!) ===
 app = FastAPI(title="OddGuru MVP")
 
 app.add_middleware(
@@ -14,7 +18,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === JOGOS DA RODADA 33 (BETANO - 08/11/2025) ===
+# === HISTÓRICO PERSISTENTE ===
+HISTORY_FILE = "history.json"
+if os.path.exists(HISTORY_FILE):
+    with open(HISTORY_FILE, "r") as f:
+        HISTORY = json.load(f)
+else:
+    HISTORY = []
+
+# === JOGOS DA RODADA 33 ===
 JOGOS_HOJE = [
     {"home": "Sport Recife", "away": "Atlético-MG", "odd_home": 3.55, "status": "08/11 16:00"},
     {"home": "Vasco da Gama", "away": "Juventude", "odd_home": 1.53, "status": "08/11 16:00"},
@@ -28,7 +40,7 @@ JOGOS_HOJE = [
     {"home": "Fortaleza", "away": "Grêmio", "odd_home": 2.10, "status": "09/11 20:30"},
 ]
 
-# === POSIÇÃO NA TABELA (08/11/2025) ===
+# === TABELA ===
 TABELA = {
     "Flamengo": 1, "Botafogo": 2, "Palmeiras": 3, "São Paulo": 4,
     "Internacional": 5, "Cruzeiro": 6, "Corinthians": 7, "Fortaleza": 8,
@@ -37,43 +49,24 @@ TABELA = {
     "Sport Recife": 17, "Bragantino": 18, "Santos": 19, "Mirassol": 20
 }
 
-# === HISTÓRICO DE APOSTAS ===
-HISTORY: List[Dict] = []
-
-# === API: VALUE BETS (MODELO REALISTA + FILTROS DE SEGURANÇA) ===
+# === VALUE BETS (MODELO SEGURO) ===
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
     value_bets = []
-
     for jogo in JOGOS_HOJE:
         home = jogo["home"]
         away = jogo["away"]
         odd_home = jogo["odd_home"]
-        
-        # POSIÇÃO DOS TIMES
         pos_home = TABELA.get(home, 20)
         pos_away = TABELA.get(away, 20)
-        
-        # PROBABILIDADE BASE
         prob_home = 0.50
-        
-        # AJUSTES POR POSIÇÃO
-        if pos_home <= 8: prob_home += 0.15   # Top 8 em casa
-        if pos_home > 12: prob_home -= 0.10   # Fora do G12
-        if pos_away <= 4: prob_home -= 0.12   # Visitante top 4
-        if pos_home <= 4: prob_home += 0.08   # Mandante top 4
-        
-        # LIMITES
+        if pos_home <= 8: prob_home += 0.15
+        if pos_home > 12: prob_home -= 0.10
+        if pos_away <= 4: prob_home -= 0.12
+        if pos_home <= 4: prob_home += 0.08
         prob_home = max(0.30, min(0.75, prob_home))
-        
-        # EDGE
         edge = (prob_home * odd_home) - 1
-
-        # FILTROS DE SEGURANÇA (SÓ ENVIA O QUE FAZ SENTIDO)
-        if (edge >= 0.15 and           # Edge realista
-            odd_home <= 2.50 and       # Nada de zebra louca
-            pos_home <= 12):           # Time competitivo
-
+        if (edge >= 0.15 and odd_home <= 2.50 and pos_home <= 12):
             value_bets.append({
                 "match": f"{home} vs {away}",
                 "status": jogo["status"],
@@ -82,15 +75,14 @@ def smart_bets() -> Dict:
                 "prob_home": round(prob_home, 3),
                 "suggestion": "APOSTE NO MANDANTE!"
             })
-
     return {
         "value_bets": value_bets or [{"message": "Nenhuma value bet segura hoje. Aguarde amanhã!"}],
         "total_games": len(JOGOS_HOJE),
         "api_source": "Odds Betano (08/11/2025)",
-        "model": "Tabela + posição realista + filtro de segurança"
+        "model": "Tabela + filtro de segurança"
     }
 
-# === REGISTRAR RESULTADO (GET - 1 CLIQUE) ===
+# === REGISTRAR RESULTADO ===
 @app.get("/api/record-result-get")
 def record_result_get(
     match: str = Query(...),
@@ -99,26 +91,27 @@ def record_result_get(
     result: str = Query(..., regex="^(win|loss)$")
 ):
     global HISTORY
-    HISTORY.append({
+    new_entry = {
         "match": match,
         "odd": odd,
         "edge": round(edge, 3),
         "result": result,
         "date": datetime.datetime.now().strftime("%d/%m %H:%M")
-    })
+    }
+    HISTORY.append(new_entry)
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(HISTORY, f, indent=2)
     return {"status": "registrado", "total": len(HISTORY)}
 
-# === HISTÓRICO + ROI ===
+# === HISTÓRICO ===
 @app.get("/api/history")
 def get_history():
     if not HISTORY:
         return {"message": "Nenhuma aposta registrada. Use /api/record-result-get"}
-    
     wins = len([h for h in HISTORY if h["result"] == "win"])
     total = len(HISTORY)
     profit = sum((h["odd"] - 1) * 100 for h in HISTORY if h["result"] == "win") - ((total - wins) * 100)
     roi = (profit / (total * 100)) if total > 0 else 0
-
     return {
         "total_bets": total,
         "wins": wins,
@@ -131,12 +124,13 @@ def get_history():
 # === DEBUG ===
 @app.get("/api/debug")
 def debug():
-    return {
-        "status": "API 100% viva",
-        "jogos_hoje": len(JOGOS_HOJE),
-        "historico": len(HISTORY),
-        "model": "Tabela + filtro de segurança"
-    }
+    return {"status": "API viva", "historico": len(HISTORY)}
 
-# === SERVIR FRONTEND ===
+# === SALVAR AO ENCERRAR ===
+def save_history():
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(HISTORY, f, indent=2)
+atexit.register(save_history)
+
+# === FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
