@@ -104,3 +104,21 @@ def debug():
 
 # === SERVIR FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
+
+# === REGISTRAR COM GET (1 CLIQUE) ===
+@app.get("/api/record-result-get")
+def record_result_get(
+    match: str,
+    odd: float,
+    edge: float,
+    result: str = "win"  # win ou loss
+):
+    global HISTORY
+    HISTORY.append({
+        "match": match,
+        "odd": odd,
+        "edge": round(edge, 3),
+        "result": result,
+        "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    })
+    return {"status": "registrado com GET", "total": len(HISTORY)}
