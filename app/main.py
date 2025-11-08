@@ -14,45 +14,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === JOGOS REAIS DE HOJE (06/11/2025) ===
+# === JOGOS REAIS ===
 JOGOS_HOJE = [
     {"home": "Fluminense", "away": "Mirassol", "odd_home": 1.93, "status": "19:30"},
     {"home": "Ceará", "away": "Fortaleza", "odd_home": 2.30, "status": "20:00"},
     {"home": "Palmeiras", "away": "Santos", "odd_home": 1.40, "status": "21:30"},
 ]
 
-# === HISTÓRICO DE APOSTAS (AO VIVO) ===
+# === HISTÓRICO ===
 HISTORY: List[Dict] = []
 
-# === API: VALUE BETS ===
+# === VALUE BETS ===
 @app.get("/api/smart-bets")
-def smart_bets() -> Dict:
+def smart_bets():
     prob_home = 0.70
     value_bets = []
-
     for jogo in JOGOS_HOJE:
-        odd_home = jogo["odd_home"]
-        edge = (prob_home * odd_home) - 1
-
+        edge = (prob_home * jogo["odd_home"]) - 1
         if edge > 0.05:
             value_bets.append({
                 "match": f"{jogo['home']} vs {jogo['away']}",
                 "status": jogo["status"],
-                "odd_home": odd_home,
+                "odd_home": jogo["odd_home"],
                 "edge": round(edge, 3),
                 "suggestion": "APOSTE NO MANDANTE!"
             })
+    return {"value_bets": value_bets}
 
-    return {
-        "value_bets": value_bets,
-        "total_games": len(JOGOS_HOJE),
-        "api_source": "Odds reais (06/11/2025)",
-        "model": "Probabilidade fixa 70% (mandante + histórico 100 jogos)"
-    }
-
-# === API: REGISTRAR RESULTADO ===
-@app.post("/api/record-result")
-def record_result(
+# === REGISTRAR COM GET (1 CLIQUE!) ===
+@app.get("/api/record-result-get")
+def record_result_get(
     match: str = Query(...),
     odd: float = Query(...),
     edge: float = Query(...),
@@ -64,61 +55,30 @@ def record_result(
         "odd": odd,
         "edge": round(edge, 3),
         "result": result,
-        "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+        "date": datetime.datetime.now().strftime("%d/%m %H:%M")
     })
-    return {"status": "registrado", "total": len(HISTORY)}
+    return {"status": "registrado com GET", "total": len(HISTORY)}
 
-# === API: HISTÓRICO COMPLETO ===
+# === HISTÓRICO ===
 @app.get("/api/history")
 def get_history():
     if not HISTORY:
-        return {"message": "Nenhuma aposta registrada ainda. Use /api/record-result"}
-
+        return {"message": "Nenhuma aposta registrada. Use /api/record-result-get"}
     wins = len([h for h in HISTORY if h["result"] == "win"])
     total = len(HISTORY)
-    profit = (wins * (odd_avg_win() - 1) * 100) - ((total - wins) * 100)
-    roi = (profit / (total * 100)) if total > 0 else 0
-
+    profit = sum(h["odd"]-1 for h in HISTORY if h["result"] == "win") * 100 - (total - wins) * 100
+    roi = profit / (total * 100) if total > 0 else 0
     return {
         "total_bets": total,
         "wins": wins,
-        "losses": total - wins,
         "profit": round(profit, 2),
         "roi": f"{roi*100:.1f}%",
-        "history": HISTORY[-10:]  # Últimas 10
+        "history": HISTORY[-10:]
     }
-
-def odd_avg_win():
-    wins = [h for h in HISTORY if h["result"] == "win"]
-    return sum(h["odd"] for h in wins) / len(wins) if wins else 2.0
 
 # === DEBUG ===
 @app.get("/api/debug")
 def debug():
-    return {
-        "status": "API 100% viva",
-        "jogos_hoje": len(JOGOS_HOJE),
-        "historico": len(HISTORY),
-        "render": "Online"
-    }
+    return {"status": "API viva", "historico": len(HISTORY)}
 
-# === SERVIR FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
-
-# === REGISTRAR COM GET (1 CLIQUE) ===
-@app.get("/api/record-result-get")
-def record_result_get(
-    match: str,
-    odd: float,
-    edge: float,
-    result: str = "win"  # win ou loss
-):
-    global HISTORY
-    HISTORY.append({
-        "match": match,
-        "odd": odd,
-        "edge": round(edge, 3),
-        "result": result,
-        "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-    })
-    return {"status": "registrado com GET", "total": len(HISTORY)}
