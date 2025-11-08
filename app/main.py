@@ -7,7 +7,7 @@ import json
 import os
 import atexit
 
-# === APP PRIMEIRO (OBRIGATÓRIO!) ===
+# === APP PRIMEIRO (OBRIGATÓRIO) ===
 app = FastAPI(title="OddGuru MVP")
 
 app.add_middleware(
@@ -18,15 +18,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === HISTÓRICO PERSISTENTE ===
-HISTORY_FILE = "history.json"
+# === HISTÓRICO PERSISTENTE (DENTRO DO app/ — 100% FUNCIONA NO RENDER) ===
+HISTORY_FILE = "app/history.json"
 if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "r") as f:
-        HISTORY = json.load(f)
+    try:
+        with open(HISTORY_FILE, "r") as f:
+            HISTORY = json.load(f)
+    except:
+        HISTORY = []
 else:
     HISTORY = []
 
-# === JOGOS DA RODADA 33 ===
+# === JOGOS DA RODADA 33 (BETANO - 08/11/2025) ===
 JOGOS_HOJE = [
     {"home": "Sport Recife", "away": "Atlético-MG", "odd_home": 3.55, "status": "08/11 16:00"},
     {"home": "Vasco da Gama", "away": "Juventude", "odd_home": 1.53, "status": "08/11 16:00"},
@@ -40,7 +43,7 @@ JOGOS_HOJE = [
     {"home": "Fortaleza", "away": "Grêmio", "odd_home": 2.10, "status": "09/11 20:30"},
 ]
 
-# === TABELA ===
+# === TABELA DE CLASSIFICAÇÃO (08/11/2025) ===
 TABELA = {
     "Flamengo": 1, "Botafogo": 2, "Palmeiras": 3, "São Paulo": 4,
     "Internacional": 5, "Cruzeiro": 6, "Corinthians": 7, "Fortaleza": 8,
@@ -49,7 +52,7 @@ TABELA = {
     "Sport Recife": 17, "Bragantino": 18, "Santos": 19, "Mirassol": 20
 }
 
-# === VALUE BETS (MODELO SEGURO) ===
+# === API: VALUE BETS (MODELO REALISTA + FILTROS) ===
 @app.get("/api/smart-bets")
 def smart_bets() -> Dict:
     value_bets = []
@@ -59,13 +62,16 @@ def smart_bets() -> Dict:
         odd_home = jogo["odd_home"]
         pos_home = TABELA.get(home, 20)
         pos_away = TABELA.get(away, 20)
+        
         prob_home = 0.50
         if pos_home <= 8: prob_home += 0.15
         if pos_home > 12: prob_home -= 0.10
         if pos_away <= 4: prob_home -= 0.12
         if pos_home <= 4: prob_home += 0.08
         prob_home = max(0.30, min(0.75, prob_home))
+        
         edge = (prob_home * odd_home) - 1
+        
         if (edge >= 0.15 and odd_home <= 2.50 and pos_home <= 12):
             value_bets.append({
                 "match": f"{home} vs {away}",
@@ -75,6 +81,7 @@ def smart_bets() -> Dict:
                 "prob_home": round(prob_home, 3),
                 "suggestion": "APOSTE NO MANDANTE!"
             })
+    
     return {
         "value_bets": value_bets or [{"message": "Nenhuma value bet segura hoje. Aguarde amanhã!"}],
         "total_games": len(JOGOS_HOJE),
@@ -82,7 +89,7 @@ def smart_bets() -> Dict:
         "model": "Tabela + filtro de segurança"
     }
 
-# === REGISTRAR RESULTADO ===
+# === REGISTRAR RESULTADO (SALVA NO app/history.json) ===
 @app.get("/api/record-result-get")
 def record_result_get(
     match: str = Query(...),
@@ -99,19 +106,24 @@ def record_result_get(
         "date": datetime.datetime.now().strftime("%d/%m %H:%M")
     }
     HISTORY.append(new_entry)
+    
+    # SALVA NO ARQUIVO (app/history.json)
     with open(HISTORY_FILE, "w") as f:
         json.dump(HISTORY, f, indent=2)
+    
     return {"status": "registrado", "total": len(HISTORY)}
 
-# === HISTÓRICO ===
+# === HISTÓRICO + ROI ===
 @app.get("/api/history")
 def get_history():
     if not HISTORY:
         return {"message": "Nenhuma aposta registrada. Use /api/record-result-get"}
+    
     wins = len([h for h in HISTORY if h["result"] == "win"])
     total = len(HISTORY)
     profit = sum((h["odd"] - 1) * 100 for h in HISTORY if h["result"] == "win") - ((total - wins) * 100)
     roi = (profit / (total * 100)) if total > 0 else 0
+
     return {
         "total_bets": total,
         "wins": wins,
@@ -124,13 +136,14 @@ def get_history():
 # === DEBUG ===
 @app.get("/api/debug")
 def debug():
-    return {"status": "API viva", "historico": len(HISTORY)}
+    return {"status": "API viva", "historico": len(HISTORY), "arquivo": HISTORY_FILE}
 
-# === SALVAR AO ENCERRAR ===
+# === SALVAR AO ENCERRAR (SEGURANÇA EXTRA) ===
 def save_history():
-    with open(HISTORY_FILE, "w") as f:
-        json.dump(HISTORY, f, indent=2)
+    if HISTORY:
+        with open(HISTORY_FILE, "w") as f:
+            json.dump(HISTORY, f, indent=2)
 atexit.register(save_history)
 
-# === FRONTEND ===
+# === SERVIR FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
