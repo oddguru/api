@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === HISTÓRICO PERSISTENTE (DENTRO DO app/ — 100% FUNCIONA NO RENDER) ===
+# === HISTÓRICO PERSISTENTE (DENTRO DO app/ — FUNCIONA NO RENDER) ===
 HISTORY_FILE = "app/history.json"
 if os.path.exists(HISTORY_FILE):
     try:
@@ -35,21 +35,36 @@ JOGOS_HOJE = [
     {"home": "Vasco da Gama", "away": "Juventude", "odd_home": 1.53, "status": "08/11 16:00"},
     {"home": "Internacional", "away": "Bahia", "odd_home": 2.35, "status": "08/11 18:30"},
     {"home": "São Paulo", "away": "Bragantino", "odd_home": 1.80, "status": "08/11 21:00"},
-    {"home": "Corinthians", "away": "Ceará", "odd_home": 1.67, "status": "09/11 16:00"},
+    {"home": "Corinthians", "away": "Ceará SC", "odd_home": 1.67, "status": "09/11 16:00"},
     {"home": "Cruzeiro", "away": "Fluminense", "odd_home": 1.88, "status": "09/11 16:00"},
-    {"home": "Vitória", "away": "Botafogo", "odd_home": 3.30, "status": "09/11 16:00"},
+    {"home": "EC Vitória", "away": "Botafogo", "odd_home": 3.30, "status": "09/11 16:00"},
     {"home": "Flamengo", "away": "Santos", "odd_home": 1.33, "status": "09/11 18:30"},
     {"home": "Mirassol", "away": "Palmeiras", "odd_home": 4.10, "status": "09/11 20:30"},
     {"home": "Fortaleza", "away": "Grêmio", "odd_home": 2.10, "status": "09/11 20:30"},
 ]
 
-# === TABELA DE CLASSIFICAÇÃO (08/11/2025) ===
+# === TABELA DE CLASSIFICAÇÃO (09/11/2025 — ANTES DA RODADA 33) ===
 TABELA = {
-    "Flamengo": 1, "Botafogo": 2, "Palmeiras": 3, "São Paulo": 4,
-    "Internacional": 5, "Cruzeiro": 6, "Corinthians": 7, "Fortaleza": 8,
-    "Vasco da Gama": 9, "Bahia": 10, "Atlético-MG": 11, "Grêmio": 12,
-    "Vitória": 13, "Fluminense": 14, "Ceará": 15, "Juventude": 16,
-    "Sport Recife": 17, "Bragantino": 18, "Santos": 19, "Mirassol": 20
+    "Palmeiras": 1,
+    "Flamengo": 2,
+    "Cruzeiro": 3,
+    "Mirassol": 4,
+    "Bahia": 5,
+    "Botafogo": 6,
+    "Fluminense": 7,
+    "São Paulo": 8,
+    "Atlético-MG": 9,
+    "Vasco da Gama": 10,
+    "Bragantino": 11,
+    "Corinthians": 12,
+    "Ceará SC": 13,
+    "Grêmio": 14,
+    "Internacional": 15,
+    "EC Vitória": 16,
+    "Santos": 17,
+    "Juventude": 18,
+    "Fortaleza": 19,
+    "Sport Recife": 20
 }
 
 # === API: VALUE BETS (MODELO REALISTA + FILTROS) ===
@@ -107,7 +122,6 @@ def record_result_get(
     }
     HISTORY.append(new_entry)
     
-    # SALVA NO ARQUIVO (app/history.json)
     with open(HISTORY_FILE, "w") as f:
         json.dump(HISTORY, f, indent=2)
     
@@ -137,6 +151,16 @@ def get_history():
 @app.get("/api/debug")
 def debug():
     return {"status": "API viva", "historico": len(HISTORY), "arquivo": HISTORY_FILE}
+
+# === MOSTRAR O ARQUIVO SALVO (PARA VOCÊ VER QUE TÁ LÁ!) ===
+@app.get("/api/show-history-file")
+def show_history_file():
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            content = f.read()
+        return {"file": HISTORY_FILE, "content": json.loads(content)}
+    else:
+        return {"error": "Arquivo history.json não encontrado"}
 
 # === SALVAR AO ENCERRAR (SEGURANÇA EXTRA) ===
 def save_history():
