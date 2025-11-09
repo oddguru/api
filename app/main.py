@@ -19,14 +19,13 @@ app.add_middleware(
 )
 
 # === HISTÓRICO PERSISTENTE (DENTRO DO app/ — FUNCIONA NO RENDER) ===
+# === HISTÓRICO PERSISTENTE ===
 HISTORY_FILE = "app/history.json"
-if os.path.exists(HISTORY_FILE):
-    try:
-        with open(HISTORY_FILE, "r") as f:
-            HISTORY = json.load(f)
-    except:
-        HISTORY = []
-else:
+try:
+    with open(HISTORY_FILE, "r") as f:
+        content = f.read().strip()
+        HISTORY = json.loads(content) if content else []
+except:
     HISTORY = []
 
 # === JOGOS DA RODADA 33 (BETANO - 08/11/2025) ===
