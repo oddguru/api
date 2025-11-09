@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "match": "Fluminense vs Mirassol",
+    "odd": 1.93,
+    "edge": 0.351,
+    "result": "win",
+    "date": "09/11 19:23"
+  },
+  {
+    "match": "Ceará vs Fortaleza",
+    "odd": 2.3,
+    "edge": 0.61,
+    "result": "loss",
+    "date": "09/11 19:23"
+  },
+  {
+    "match": "Internacional vs Bahia",
+    "odd": 2.35,
+    "edge": 0.528,
+    "result": "loss",
+    "date": "09/11 19:23"
+  },
+  {
+    "match": "São Paulo vs Bragantino",
+    "odd": 1.8,
+    "edge": 0.314,
+    "result": "loss",
+    "date": "09/11 19:23"
+  }
+]
