@@ -1,25 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <title>OddGURU</title>
+  <title>OddGURU - Value Bets com Fundamento</title>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial; text-align: center; background: #111; color: #0f0; padding: 20px; }
-    .title { color: #0ff; font-size: 2em; }
-    .subtitle { color: #0f0; font-size: 1em; }
-    .value-bet { background: #0a0; color: #000; padding: 15px; margin: 10px; border-radius: 10px; font-weight: bold; }
-    .no-edge { background: #333; color: #aaa; padding: 10px; margin: 5px; border-radius: 8px; font-size: 0.9em; }
-    .edge-positive { color: #0f0; font-weight: bold; }
-    .edge-negative { color: #f55; }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      text-align: center; 
+      background: linear-gradient(135deg, #0a0a1a, #1a1a2e); 
+      color: #0f0; 
+      padding: 20px; 
+      margin: 0; 
+    }
+    .title { 
+      color: #00ff88; 
+      font-size: 2.8em; 
+      text-shadow: 0 0 20px #00ff88; 
+      margin-bottom: 10px;
+    }
+    .subtitle { 
+      color: #0ff; 
+      font-size: 1.2em; 
+      margin-bottom: 20px;
+    }
+    .history-link {
+      display: inline-block;
+      background: #00ff88;
+      color: #000;
+      padding: 12px 25px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      margin: 15px;
+      box-shadow: 0 0 15px #00ff88;
+    }
+    .history-link:hover { background: #00cc66; }
+    .value-bet { 
+      background: rgba(0, 255, 136, 0.15); 
+      border: 2px solid #00ff88;
+      color: #fff; 
+      padding: 20px; 
+      margin: 20px auto; 
+      border-radius: 15px; 
+      max-width: 500px;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+    .match { font-size: 1.4em; font-weight: bold; color: #0ff; }
     .time { color: #ff0; font-size: 0.9em; }
+    .odd-edge { font-size: 1.3em; margin: 10px 0; }
+    .edge-positive { color: #0f0; font-weight: bold; }
+    .why { 
+      background: rgba(0, 255, 0, 0.1);
+      border-left: 4px solid #0f0;
+      padding: 12px;
+      margin: 15px 0;
+      text-align: left;
+      font-size: 1em;
+      color: #ccc;
+    }
+    .suggestion { 
+      color: #00ff88; 
+      font-size: 1.4em; 
+      font-weight: bold; 
+      margin-top: 15px;
+    }
+    .no-bets { color: #aaa; font-size: 1.2em; }
   </style>
 </head>
 <body>
   <h1 class="title">OddGURU</h1>
-  <p style="margin-top:20px;">
-  <a href="/api/history" target="_blank" style="color:#0ff;">Ver Histórico (ROI)</a>
-</p>
-  <p class="subtitle">Atualizado em tempo real — 06/11/2025</p>
+  <p class="subtitle">Value Bets com fundamento — Atualizado em tempo real</p>
+
+  <a href="/history.html" class="history-link">VER HISTÓRICO + ROI AO VIVO</a>
+
   <div id="bets">Carregando value bets...</div>
 
   <script>
@@ -29,36 +83,30 @@
         const el = document.getElementById('bets');
         el.innerHTML = '';
 
-        // VALUE BETS (EDGE > 5%)
-        if (d.value_bets.length > 0) {
+        if (d.value_bets && d.value_bets.length > 0) {
           d.value_bets.forEach(b => {
             el.innerHTML += `
               <div class="value-bet">
-                ${b.match} <span class="time">(${b.status})</span><br>
-                Odd: ${b.odd_home} | Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span><br>
-                <strong>${b.suggestion}</strong>
+                <div class="match">${b.match}</div>
+                <div class="time">${b.status}</div>
+                <div class="odd-edge">
+                  Odd: <strong>${b.odd_home}</strong> | 
+                  Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
+                </div>
+                <div class="why">
+                  <strong>POR QUÊ ESSA É VALUE BET?</strong><br>
+                  ${b.why || "Análise completa do modelo OddGURU"}
+                </div>
+                <div class="suggestion">${b.suggestion}</div>
               </div>`;
           });
-        }
-
-        // JOGOS SEM VALUE BET (EDGE ≤ 5%)
-        const noEdgeGames = d.all_games.filter(g => g.edge <= 0.05);
-        if (noEdgeGames.length > 0) {
-          el.innerHTML += '<p style="color:#666; margin-top:20px;">Outros jogos (sem value):</p>';
-          noEdgeGames.forEach(g => {
-            el.innerHTML += `
-              <div class="no-edge">
-                ${g.match} <span class="time">(${g.status})</span><br>
-                Odd: ${g.odd_home} | Edge: <span class="edge-negative">${(g.edge*100).toFixed(1)}%</span>
-              </div>`;
-          });
-        }
-
-        if (d.value_bets.length === 0 && noEdgeGames.length === 0) {
-          el.innerHTML = '<p style="color:#aaa">Aguardando jogos...</p>';
+        } else {
+          el.innerHTML = '<p class="no-bets">Nenhuma value bet segura no momento. Aguarde as próximas rodadas!</p>';
         }
       })
-      .catch(() => el.innerHTML = '<p style="color:red">Erro na API</p>');
+      .catch(() => {
+        document.getElementById('bets').innerHTML = '<p style="color:red">Erro ao carregar as apostas</p>';
+      });
   </script>
 </body>
 </html>
