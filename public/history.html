@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <title>OddGuru - Histórico + ROI</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #0a0a1a, #1a1a2e); color: #fff; text-align: center; padding: 20px; margin: 0; }
+    h1 { color: #00ff88; font-size: 2.5em; text-shadow: 0 0 15px #00ff88; }
+    .subtitle { color: #aaa; font-size: 1.2em; margin-bottom: 20px; }
+    .roi { background: #1a1a2e; border: 1px solid #ffd700; color: #ffd700; padding: 15px; border-radius: 15px; font-size: 1.5em; margin: 20px auto; max-width: 400px; }
+    .history { max-width: 600px; margin: 0 auto; }
+    .entry { background: rgba(255, 255, 255, 0.08); border: 1px solid #00ff88; border-radius: 15px; padding: 15px; margin: 10px 0; text-align: left; }
+    .win { border-color: #0f0; }
+    .loss { border-color: #f55; }
+    .back-btn { background: #00ff88; color: #000; padding: 15px 30px; font-size: 1.2em; border-radius: 10px; text-decoration: none; display: inline-block; margin-top: 30px; }
+    .back-btn:hover { background: #00cc66; }
+  </style>
+</head>
+<body>
+  <h1>OddGuru - Histórico + ROI</h1>
+  <p class="subtitle">Transparência total — 06/11/2025</p>
+
+  <div id="roi" class="roi">Carregando ROI...</div>
+  <div id="history" class="history">Carregando histórico...</div>
+
+  <a href="/" class="back-btn">← Voltar para Value Bets</a>
+
+  <script>
+    fetch('/api/history')
+      .then(r => r.json())
+      .then(d => {
+        const roiEl = document.getElementById('roi');
+        const historyEl = document.getElementById('history');
+
+        roiEl.innerHTML = `
+          Total: ${d.total_bets} apostas<br>
+          Vitórias: ${d.wins} | Derrotas: ${d.losses}<br>
+          Lucro: R$${d.profit.toFixed(2)} | ROI: <strong>${d.roi}</strong>
+        `;
+
+        if (d.history && d.history.length > 0) {
+          d.history.forEach(h => {
+            const className = h.result === "win" ? "entry win" : "entry loss";
+            historyEl.innerHTML += `
+              <div class="${className}">
+                <strong>${h.match}</strong> (${h.date})<br>
+                Odd: ${h.odd} | Edge: +${(h.edge*100).toFixed(1)}%<br>
+                Resultado: <strong>${h.result === "win" ? "GANHOU" : "PERDEU"}</strong>
+              </div>`;
+          });
+        } else {
+          historyEl.innerHTML = '<p style="color:#aaa">Nenhuma aposta registrada ainda.</p>';
+        }
+      })
+      .catch(() => {
+        document.getElementById('roi').innerHTML = '<p style="color:red">Erro ao carregar histórico</p>';
+      });
+  </script>
+</body>
+</html>
