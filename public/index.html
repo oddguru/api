@@ -5,99 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OddGURU PRO</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(135deg, #0f0f1e, #1a1a2e);
-      color: #0f0;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-    }
-    .title {
-      font-size: 3em;
-      color: #00ff88;
-      text-shadow: 0 0 20px #00ff88;
-      margin: 20px 0;
-    }
-    .subtitle {
-      color: #0ff;
-      font-size: 1.3em;
-      margin-bottom: 30px;
-    }
-    .history-btn {
-      background: #00ff88;
-      color: #000;
-      padding: 15px 30px;
-      border-radius: 15px;
-      font-weight: bold;
-      text-decoration: none;
-      display: inline-block;
-      margin: 20px;
-      box-shadow: 0 0 20px #00ff88;
-    }
-    .history-btn:hover { background: #00cc66; }
-    .value-bet {
-      background: rgba(0, 255, 136, 0.15);
-      border: 2px solid #00ff88;
-      border-radius: 15px;
-      padding: 20px;
-      margin: 20px auto;
-      max-width: 600px;
-      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-    }
-    .match {
-      font-size: 1.5em;
-      color: #0ff;
-      font-weight: bold;
-    }
-    .time {
-      color: #ff0;
-      font-size: 0.9em;
-      margin: 8px 0;
-    }
-    .odd-edge {
-      font-size: 1.4em;
-      margin: 15px 0;
-    }
-    .edge-positive { color: #0f0; font-weight: bold; }
-    .why {
-      background: rgba(0, 255, 0, 0.1);
-      border-left: 4px solid #0f0;
-      padding: 15px;
-      margin: 15px 0;
-      text-align: left;
-      font-size: 1em;
-      color: #ccc;
-    }
-    .suggestion {
-      color: #00ff88;
-      font-size: 1.5em;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    .no-bets {
-      color: #aaa;
-      font-size: 1.4em;
-      margin: 50px;
-    }
-    .footer {
-      margin-top: 50px;
-      color: #666;
-      font-size: 0.9em;
-    }
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#0f0f1e;color:#0f0;margin:0;padding:20px;background:linear-gradient(135deg,#0f0f1e,#1a1a2e);}
+    .title{font-size:3em;color:#00ff88;text-shadow:0 0 20px #00ff88;text-align:center;margin:20px 0;}
+    .subtitle{color:#0ff;text-align:center;font-size:1.3em;margin-bottom:30px;}
+    .history-btn{background:#00ff88;color:#000;padding:15px 30px;border-radius:15px;font-weight:bold;text-decoration:none;display:inline-block;margin:20px;box-shadow:0 0 20px #00ff88;}
+    .history-btn:hover{background:#00cc66;}
+    .value-bet{background:rgba(0,255,136,0.15);border:2px solid #00ff88;border-radius:15px;padding:20px;margin:20px auto;max-width:600px;box-shadow:0 0 20px rgba(0,255,136,0.3);}
+    .match{font-size:1.6em;color:#0ff;font-weight:bold;margin-bottom:8px;}
+    .mercado{font-size:1.1em;color:#ff0;margin:10px 0;}
+    .odd-edge{font-size:1.5em;margin:15px 0;}
+    .edge-positive{color:#0f0;font-weight:bold;}
+    .why{background:rgba(0,255,0,0.1);border-left:4px solid #0f0;padding:15px;margin:15px 0;text-align:left;color:#ccc;}
+    .suggestion{color:#00ff88;font-size:1.6em;font-weight:bold;margin-top:20px;}
+    .no-bets{color:#aaa;font-size:1.4em;margin:50px;text-align:center;}
+    .footer{margin-top:50px;color:#666;font-size:0.9em;text-align:center;}
   </style>
 </head>
 <body>
   <h1 class="title">OddGURU PRO</h1>
   <p class="subtitle">Value Bets com fundamento • Todos os mercados • Atualizado em tempo real</p>
-
-  <a href="/history.html" class="history-btn">VER HISTÓRICO + ROI AO VIVO</a>
+  <div style="text-align:center;">
+    <a href="/history.html" class="history-btn">VER HISTÓRICO + ROI AO VIVO</a>
+  </div>
 
   <div id="bets">Carregando value bets...</div>
 
-  <div class="footer">
-    © 2025 OddGURU • Todos os direitos reservados
-  </div>
+  <div class="footer">© 2025 OddGURU • Todos os direitos reservados</div>
 
   <script>
     async function loadBets() {
@@ -112,7 +45,17 @@
           return;
         }
 
-        const marketEmoji = {
+        // MAPEAMENTO CLARO PARA O CLIENTE
+        const mercadoLabel = {
+          "1X2": "VITÓRIA / EMPATE / DERROTA",
+          "cartoes": "TOTAL DE CARTÕES",
+          "escanteios": "TOTAL DE ESCANTEIOS",
+          "gols": "TOTAL DE GOLS",
+          "btts": "AMBAS AS EQUIPES MARCAM",
+          "over1.5": "MAIS DE 1.5 GOLS"
+        };
+
+        const emoji = {
           "1X2": "Trophy",
           "cartoes": "Yellow Card",
           "escanteios": "Corner Flag",
@@ -122,28 +65,28 @@
         };
 
         data.active_bets.forEach(b => {
-          const emoji = marketEmoji[b.market] || "Money Bag";
           el.innerHTML += `
             <div class="value-bet">
-              <div class="match">${emoji} <strong>${b.match}</strong></div>
-              <div class="time">Hoje • ${b.market.toUpperCase()} • ${b.selection}</div>
+              <div class="match">${emoji[b.market] || "Money Bag"} <strong>${b.match}</strong></div>
+              <div class="mercado">
+                <strong>${mercadoLabel[b.market] || b.market.toUpperCase()}</strong><br>
+                ${b.selection}
+              </div>
               <div class="odd-edge">
-                Odd: <strong>${b.odd}</strong> | 
-                Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
+                Odd: <strong>${b.odd}</strong> | Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
               </div>
               <div class="why">
                 <strong>POR QUÊ ESSA É VALUE BET?</strong><br>
                 ${b.why || "Análise completa do modelo OddGURU"}
               </div>
-              <div class="suggestion">${b.suggestion || "APOSTE AGORA!"}</div>
+              <div class="suggestion">APOSTE AGORA!</div>
             </div>`;
         });
       } catch (err) {
-        document.getElementById('bets').innerHTML = '<p style="color:red">Erro ao carregar apostas</p>';
+        el.innerHTML = '<p style="color:red">Erro ao carregar apostas</p>';
       }
     }
 
-    // Carrega na hora e atualiza a cada 30 segundos
     loadBets();
     setInterval(loadBets, 30000);
   </script>
