@@ -1,81 +1,49 @@
-from flask import Flask, jsonify
+from fastapi import FastAPI
 import requests
-from datetime import datetime, timedelta
+from supabase import create_client, Client
 import os
+from datetime import date
 
-app = Flask(__name__)
+app = FastAPI()
 
 # --- CONFIGURAÇÕES ---
-THESPORTSDB_URL = "https://www.thesportsdb.com/api/v1/json/3/eventsday.php"
-# ID do Campeonato Brasileiro Série A no TheSportsDB
-LEAGUE_ID = "4424"  # Brasileirão Série A (ID oficial)
-TIMEZONE = "America/Sao_Paulo"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY", "7dcbc0af76b1be4e91195a55f8f77010")
 
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def get_matches_by_date(date_str):
-    """Busca os jogos do Brasileirão na data especificada."""
-    params = {
-        "d": date_str,
-        "l": "Brazilian Série A"
-    }
-    try:
-        response = requests.get(THESPORTSDB_URL, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+# Liga Brasileira Série A (id=71)
+LEAGUE_ID = 71
+SEASON = 2024
 
-        if not data or not data.get("events"):
-            return None
+@app.get("/update-today")
+def update_today_matches():
+    today = date.today().strftime("%Y-%m-%d")
 
-        jogos = []
-        for event in data["events"]:
-            jogos.append({
-                "home": event.get("strHomeTeam"),
-                "away": event.get("strAwayTeam"),
-                "date": event.get("dateEvent"),
-                "time": event.get("strTime"),
-                "status": event.get("strStatus") or "A definir",
-                "home_score": event.get("intHomeScore"),
-                "away_score": event.get("intAwayScore")
-            })
-        return jogos
-    except Exception as e:
-        print(f"Erro ao buscar jogos: {e}")
-        return None
+    url = f"https://v3.football.api-sports.io/fixtures?league={LEAGUE_ID}&season={SEASON}&date={today}"
+    headers = {"x-apisports-key": API_FOOTBALL_KEY}
+    res = requests.get(url, headers=headers)
+    data = res.json()
 
+    if "response" not in data:
+        return {"error": "API sem retorno válido", "data": data}
 
-@app.route("/api/update-today", methods=["GET"])
-def update_today():
-    today = datetime.now().date()
-    dates_to_try = [
-        today.strftime("%Y-%m-%d"),
-        (today - timedelta(days=1)).strftime("%Y-%m-%d"),
-        (today + timedelta(days=1)).strftime("%Y-%m-%d")
-    ]
+    saved = []
+    for item in data["response"]:
+        fixture = item["fixture"]
+        teams = item["teams"]
+        league = item["league"]
 
-    for date_str in dates_to_try:
-        jogos = get_matches_by_date(date_str)
-        if jogos:
-            return jsonify({
-                "status": "Jogos encontrados",
-                "date": date_str,
-                "matches": jogos
-            })
-
-    return jsonify({
-        "status": "Sem jogos disponíveis",
-        "date": today.strftime("%Y-%m-%d")
-    })
-
-
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({
-        "status": "API funcionando",
-        "endpoints": {
-            "/api/update-today": "Retorna os jogos do Brasileirão Série A do dia"
+        match_data = {
+            "fixture_id": fixture["id"],
+            "date": fixture["date"],
+            "league": league["name"],
+            "home_team": teams["home"]["name"],
+            "away_team": teams["away"]["name"],
         }
-    })
 
+        supabase.table("matches").upsert(match_data).execute()
+        saved.append(match_data)
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    return {"message": f"{len(saved)} partidas salvas com sucesso.", "matches": saved}
