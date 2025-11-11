@@ -59,13 +59,13 @@
           const isCasa = (b.market === "1X2" && b.selection === b.home_team);
           const mercadoTexto = (b.market === "1X2" && isCasa) ? "VITÓRIA DO TIME DA CASA" : mercadoLabel[b.market] || b.market.toUpperCase();
 
-          // AQUI ESTÁ O SEGREDO: EMOJIS REAIS, NÃO TEXTO!
+          // EMOJIS REAIS COM &#xCODE; — FUNCIONA EM QUALQUER LUGAR!
           let icone = "Money Bag";
-          if (b.market === "1X2") icone = "Trophy";
-          if (b.market === "cartoes") icone = "Yellow Card";
-          if (b.market === "escanteios") icone = "Corner Flag";
-          if (b.market === "btts") icone = "Handshake";
-          if (b.market === "gols" || b.market === "over1.5") icone = "Soccer Ball";
+          if (b.market === "1X2") icone = "&#x1F3C6;";
+          if (b.market === "cartoes") icone = "&#x1F7E8;";
+          if (b.market === "escanteios") icone = "&#x1F6A9;";
+          if (b.market === "btts") icone = "&#x1F91D;";
+          if (b.market === "gols" || b.market === "over1.5") icone = "&#x26BD;";
 
           el.innerHTML += `
             <div class="value-bet">
