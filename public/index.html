@@ -19,6 +19,7 @@
     .suggestion{color:#00ff88;font-size:1.6em;font-weight:bold;margin-top:20px;}
     .no-bets{color:#aaa;font-size:1.4em;margin:50px;text-align:center;}
     .footer{margin-top:50px;color:#666;font-size:0.9em;text-align:center;}
+    .icon {font-size:1.2em;margin-right:5px;}
   </style>
 </head>
 <body>
@@ -45,16 +46,6 @@
           return;
         }
 
-        // EMOJIS REAIS (Unicode) — AGORA É O CARACTERE DE VERDADE!
-        const emoji = {
-          "1X2": "Trophy",
-          "cartoes": "Yellow Card",
-          "escanteios": "Corner Flag",
-          "gols": "Soccer Ball",
-          "btts": "Handshake",
-          "over1.5": "Target"
-        };
-
         const mercadoLabel = {
           "1X2": "VITÓRIA DO TIME DA CASA",
           "cartoes": "TOTAL DE CARTÕES",
@@ -70,7 +61,7 @@
 
           el.innerHTML += `
             <div class="value-bet">
-              <div class="match">${emoji[b.market] || "Money Bag"} <strong>${b.match}</strong></div>
+              <div class="match"><span class="icon">🏆</span><strong>${b.match}</strong></div>
               <div class="mercado">
                 <strong>${mercadoTexto}</strong><br>
                 <span style="color:#0ff;font-size:1.3em;font-weight:bold;">${b.selection}</span>
