@@ -1,128 +1,81 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from supabase import create_client
-from pydantic import BaseModel
-import datetime
+from flask import Flask, jsonify
 import requests
+from datetime import datetime, timedelta
 import os
 
-app = FastAPI(title="OddGuru PRO v2")
+app = Flask(__name__)
 
-# ===== CORS =====
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# --- CONFIGURAÇÕES ---
+THESPORTSDB_URL = "https://www.thesportsdb.com/api/v1/json/3/eventsday.php"
+# ID do Campeonato Brasileiro Série A no TheSportsDB
+LEAGUE_ID = "4424"  # Brasileirão Série A (ID oficial)
+TIMEZONE = "America/Sao_Paulo"
 
-# ===== SUPABASE =====
-supabase = create_client(
-    os.getenv("SUPABASE_URL", "https://tvhtsdzaqhketkolnnwj.supabase.co"),
-    os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-)
 
-# ===== MODELOS =====
-class BetIn(BaseModel):
-    match: str
-    home_team: str
-    away_team: str
-    market: str
-    selection: str
-    odd: float
-    edge: float
-    why: str
-
-class BetResult(BaseModel):
-    match: str
-    market: str
-    selection: str
-    result: str
-
-# ===== ROTAS =====
-
-@app.post("/api/add-bet")
-def add_bet(bet: BetIn):
-    data = bet.dict()
-    data["bet_date"] = datetime.datetime.now().isoformat()
-    supabase.table("bets").delete().eq("match", bet.match).eq("market", bet.market).eq("selection", bet.selection).execute()
-    supabase.table("bets").insert(data).execute()
-    return {"status": "Value Bet cadastrada!"}
-
-@app.post("/api/record-result")
-def record_result(res: BetResult):
-    supabase.table("bets").update({"result": res.result}).eq("match", res.match).eq("market", res.market).eq("selection", res.selection).execute()
-    return {"status": "Resultado registrado"}
-
-@app.get("/api/active-bets")
-def active_bets():
-    data = supabase.table("bets").select("*").is_("result", None).order("bet_date", desc=True).execute()
-    return {"active_bets": data.data}
-
-@app.get("/api/history")
-def history():
-    data = supabase.table("bets").select("*").not_.is_("result", None).order("created_at", desc=True).execute()
-    bets = data.data
-    total = len(bets)
-    wins = len([b for b in bets if b["result"] == "win"])
-    profit = sum((b["odd"] - 1) * 100 for b in bets if b["result"] == "win") - (total - wins) * 100
-    roi = (profit / (total * 100) * 100) if total > 0 else 0
-    return {
-        "total_bets": total, "wins": wins, "losses": total - wins,
-        "profit": round(profit, 2), "roi": f"{roi:.1f}%", "history": bets[:50]
+def get_matches_by_date(date_str):
+    """Busca os jogos do Brasileirão na data especificada."""
+    params = {
+        "d": date_str,
+        "l": "Brazilian Série A"
     }
-
-# ===== FOOTBALL DATA =====
-@app.get("/api/update-today")
-def update_today():
-    date_to_use = datetime.datetime.now().strftime("%Y-%m-%d")
-
-    url = f"https://api.football-data.org/v4/competitions/BSA/matches?dateFrom={date_to_use}&dateTo={date_to_use}"
-    headers = {"X-Auth-Token": os.getenv("FOOTBALL_API_KEY", "69a4062b62f0434d966d5aad2e78a1df")}
-
     try:
-        resp = requests.get(url, headers=headers, timeout=15)
-        resp.raise_for_status()
-        matches = resp.json().get("matches", [])
+        response = requests.get(THESPORTSDB_URL, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        if not data or not data.get("events"):
+            return None
+
+        jogos = []
+        for event in data["events"]:
+            jogos.append({
+                "home": event.get("strHomeTeam"),
+                "away": event.get("strAwayTeam"),
+                "date": event.get("dateEvent"),
+                "time": event.get("strTime"),
+                "status": event.get("strStatus") or "A definir",
+                "home_score": event.get("intHomeScore"),
+                "away_score": event.get("intAwayScore")
+            })
+        return jogos
     except Exception as e:
-        return {"error": "API offline", "details": str(e)}
+        print(f"Erro ao buscar jogos: {e}")
+        return None
 
-    if not matches:
-        return {"status": "Sem jogos na data", "date": date_to_use}
 
-    added = 0
-    for m in matches:
-        home = m["homeTeam"]["name"]
-        away = m["awayTeam"]["name"]
-        match = f"{home} vs {away}"
+@app.route("/api/update-today", methods=["GET"])
+def update_today():
+    today = datetime.now().date()
+    dates_to_try = [
+        today.strftime("%Y-%m-%d"),
+        (today - timedelta(days=1)).strftime("%Y-%m-%d"),
+        (today + timedelta(days=1)).strftime("%Y-%m-%d")
+    ]
 
-        bets = [
-            {"market": "1X2", "selection": home, "odd": 2.15, "edge": 0.33, "why": f"{home} forte em casa"},
-            {"market": "cartoes", "selection": "Over 5.5", "odd": 1.98, "edge": 0.39, "why": "Média alta de cartões"},
-            {"market": "escanteios", "selection": "Over 9.5", "odd": 1.92, "edge": 0.36, "why": "Jogo de muita posse"},
-            {"market": "gols", "selection": "Over 2.5", "odd": 2.05, "edge": 0.31, "why": "Histórico de gols"},
-            {"market": "btts", "selection": "Sim", "odd": 2.00, "edge": 0.32, "why": "Ambos marcam"}
-        ]
+    for date_str in dates_to_try:
+        jogos = get_matches_by_date(date_str)
+        if jogos:
+            return jsonify({
+                "status": "Jogos encontrados",
+                "date": date_str,
+                "matches": jogos
+            })
 
-        for bt in bets:
-            data = {
-                "match": match,
-                "home_team": home,
-                "away_team": away,
-                "market": bt["market"],
-                "selection": bt["selection"],
-                "odd": bt["odd"],
-                "edge": bt["edge"],
-                "why": bt["why"],
-                "bet_date": datetime.datetime.now().isoformat()
-            }
-            supabase.table("bets").delete().eq("match", match).eq("market", bt["market"]).execute()
-            supabase.table("bets").insert(data).execute()
-            added += 1
+    return jsonify({
+        "status": "Sem jogos disponíveis",
+        "date": today.strftime("%Y-%m-%d")
+    })
 
-    return {"status": f"{added} value bets cadastradas!", "jogos": len(matches)}
 
-# ===== FRONT =====
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "status": "API funcionando",
+        "endpoints": {
+            "/api/update-today": "Retorna os jogos do Brasileirão Série A do dia"
+        }
+    })
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
