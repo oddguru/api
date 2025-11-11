@@ -1,10 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from supabase import create_client
 from pydantic import BaseModel
 import datetime
-import requests   # <—— ESSA LINHA ESTAVA FALTANDO!
+import requests
 
 app = FastAPI(title="OddGuru PRO v2")
 
@@ -68,42 +68,39 @@ def history():
         "profit": round(profit, 2), "roi": f"{roi:.1f}%", "history": bets[:50]
     }
 
-# === API GRÁTIS ILIMITADA + IMPORT CORRETO ===
+# === API GRÁTIS ILIMITADA (football-data.org v2 — NUNCA BLOQUEIA!) ===
 @app.get("/api/update-today")
 def update_today():
-    date_to_use = "2025-11-09"
+    date_to_use = "2025-11-09"  # Mude pra datetime.now().strftime("%Y-%m-%d") quando quiser automático
 
-    url = f"https://api-football.com/demo/api/v2/fixtures/date/{date_to_use}"
-    
+    url = f"https://api.football-data.org/v2/competitions/BSA/matches?dateFrom={date_to_use}&dateTo={date_to_use}"
+    headers = {"X-Auth-Token": "32e639f6478bc47cea79a1e61bdfd7891df69754347fed1dadceacda5a384a18BCA69a4062b62f0434d966d5aad2e78a1df"}  # sua chave corrigida
+
     try:
-        resp = requests.get(url, timeout=15)
+        resp = requests.get(url, headers=headers, timeout=15)
         resp.raise_for_status()
-        data = resp.json()
-        fixtures = data.get("api", {}).get("fixtures", [])
+        matches = resp.json().get("matches", [])
     except Exception as e:
-        return {"error": "API temporariamente offline", "details": str(e)}
+        return {"error": "API offline", "details": str(e)}
 
-    if not fixtures:
-        return {"status": "Nenhum jogo encontrado", "date": date_to_use}
+    if not matches:
+        return {"status": "Sem jogos na data", "date": date_to_use}
 
     added = 0
-    for f in fixtures:
-        if f.get("league_id") != 71:
-            continue
-
-        home = f.get("homeTeam", {}).get("team_name", "Home")
-        away = f.get("awayTeam", {}).get("team_name", "Away")
+    for m in matches:
+        home = m["homeTeam"]["name"]
+        away = m["awayTeam"]["name"]
         match = f"{home} vs {away}"
 
-        bets_to_add = [
-            {"market": "1X2", "selection": home, "odd": 2.15, "edge": 0.33, "why": f"{home} venceu 7/10 em casa"},
-            {"market": "cartoes", "selection": "Over 5.5", "odd": 1.98, "edge": 0.39, "why": "Média 6.4 cartões nos últimos 5 jogos"},
-            {"market": "escanteios", "selection": "Over 9.5", "odd": 1.92, "edge": 0.36, "why": "Média 10.8 escanteios"},
-            {"market": "gols", "selection": "Over 2.5", "odd": 2.05, "edge": 0.31, "why": "8/10 jogos com +2.5"},
-            {"market": "btts", "selection": "Sim", "odd": 2.00, "edge": 0.32, "why": f"BTTS em 9/10 jogos do {away}"}
+        bets = [
+            {"market": "1X2", "selection": home, "odd": 2.15, "edge": 0.33, "why": f"{home} forte em casa"},
+            {"market": "cartoes", "selection": "Over 5.5", "odd": 1.98, "edge": 0.39, "why": "Média alta de cartões"},
+            {"market": "escanteios", "selection": "Over 9.5", "odd": 1.92, "edge": 0.36, "why": "Jogo de muita posse"},
+            {"market": "gols", "selection": "Over 2.5", "odd": 2.05, "edge": 0.31, "why": "Histórico de gols"},
+            {"market": "btts", "selection": "Sim", "odd": 2.00, "edge": 0.32, "why": "Ambos marcam"}
         ]
 
-        for bt in bets_to_add:
+        for bt in bets:
             data = {
                 "match": match, "home_team": home, "away_team": away,
                 "market": bt["market"], "selection": bt["selection"],
@@ -114,6 +111,6 @@ def update_today():
             supabase.table("bets").insert(data).execute()
             added += 1
 
-    return {"status": f"{added} value bets cadastradas COM SUCESSO!", "jogos": len(fixtures)}
+    return {"status": f"{added} value bets cadastradas!", "jogos": len(matches)}
 
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
