@@ -1,151 +1,151 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <title>OddGURU - Value Bets com Fundamento</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OddGURU PRO</title>
   <style>
-    body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      text-align: center; 
-      background: linear-gradient(135deg, #0a0a1a, #1a1a2e); 
-      color: #0f0; 
-      padding: 20px; 
-      margin: 0; 
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #0f0f1e, #1a1a2e);
+      color: #0f0;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
     }
-    .title { 
-      color: #00ff88; 
-      font-size: 2.8em; 
-      text-shadow: 0 0 20px #00ff88; 
-      margin-bottom: 10px;
+    .title {
+      font-size: 3em;
+      color: #00ff88;
+      text-shadow: 0 0 20px #00ff88;
+      margin: 20px 0;
     }
-    .subtitle { 
-      color: #0ff; 
-      font-size: 1.2em; 
-      margin-bottom: 20px;
+    .subtitle {
+      color: #0ff;
+      font-size: 1.3em;
+      margin-bottom: 30px;
     }
-    .history-link {
-      display: inline-block;
+    .history-btn {
       background: #00ff88;
       color: #000;
-      padding: 12px 25px;
-      border-radius: 10px;
-      text-decoration: none;
+      padding: 15px 30px;
+      border-radius: 15px;
       font-weight: bold;
-      margin: 15px;
-      box-shadow: 0 0 15px #00ff88;
+      text-decoration: none;
+      display: inline-block;
+      margin: 20px;
+      box-shadow: 0 0 20px #00ff88;
     }
-    .history-link:hover { background: #00cc66; }
-    .value-bet { 
-      background: rgba(0, 255, 136, 0.15); 
+    .history-btn:hover { background: #00cc66; }
+    .value-bet {
+      background: rgba(0, 255, 136, 0.15);
       border: 2px solid #00ff88;
-      color: #fff; 
-      padding: 20px; 
-      margin: 20px auto; 
-      border-radius: 15px; 
-      max-width: 500px;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 600px;
       box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
     }
-    .match { font-size: 1.4em; font-weight: bold; color: #0ff; }
-    .time { color: #ff0; font-size: 0.9em; }
-    .odd-edge { font-size: 1.3em; margin: 10px 0; }
+    .match {
+      font-size: 1.5em;
+      color: #0ff;
+      font-weight: bold;
+    }
+    .time {
+      color: #ff0;
+      font-size: 0.9em;
+      margin: 8px 0;
+    }
+    .odd-edge {
+      font-size: 1.4em;
+      margin: 15px 0;
+    }
     .edge-positive { color: #0f0; font-weight: bold; }
-    .why { 
+    .why {
       background: rgba(0, 255, 0, 0.1);
       border-left: 4px solid #0f0;
-      padding: 12px;
+      padding: 15px;
       margin: 15px 0;
       text-align: left;
       font-size: 1em;
       color: #ccc;
     }
-    .suggestion { 
-      color: #00ff88; 
-      font-size: 1.4em; 
-      font-weight: bold; 
-      margin-top: 15px;
+    .suggestion {
+      color: #00ff88;
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-top: 20px;
     }
-    .no-bets { color: #aaa; font-size: 1.2em; }
+    .no-bets {
+      color: #aaa;
+      font-size: 1.4em;
+      margin: 50px;
+    }
+    .footer {
+      margin-top: 50px;
+      color: #666;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
-  <h1 class="title">OddGURU</h1>
-  <p class="subtitle">Value Bets com fundamento — Atualizado em tempo real</p>
+  <h1 class="title">OddGURU PRO</h1>
+  <p class="subtitle">Value Bets com fundamento • Todos os mercados • Atualizado em tempo real</p>
 
-  <a href="/history.html" class="history-link">VER HISTÓRICO + ROI AO VIVO</a>
+  <a href="/history.html" class="history-btn">VER HISTÓRICO + ROI AO VIVO</a>
 
   <div id="bets">Carregando value bets...</div>
 
+  <div class="footer">
+    © 2025 OddGURU • Todos os direitos reservados
+  </div>
+
   <script>
-    fetch('/api/smart-bets')
-      .then(r => r.json())
-      .then(d => {
+    async function loadBets() {
+      try {
+        const res = await fetch('/api/active-bets');
+        const data = await res.json();
         const el = document.getElementById('bets');
         el.innerHTML = '';
 
-        if (d.value_bets && d.value_bets.length > 0) {
-          d.value_bets.forEach(b => {
-            el.innerHTML += `
-              <div class="value-bet">
-                <div class="match">${b.match}</div>
-                <div class="time">${b.status}</div>
-                <div class="odd-edge">
-                  Odd: <strong>${b.odd_home}</strong> | 
-                  Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
-                </div>
-                <div class="why">
-                  <strong>POR QUÊ ESSA É VALUE BET?</strong><br>
-                  ${b.why || "Análise completa do modelo OddGURU"}
-                </div>
-                <div class="suggestion">${b.suggestion}</div>
-              </div>`;
-          });
-        } else {
-          el.innerHTML = '<p class="no-bets">Nenhuma value bet segura no momento. Aguarde as próximas rodadas!</p>';
+        if (!data.active_bets || data.active_bets.length === 0) {
+          el.innerHTML = '<p class="no-bets">Nenhuma value bet ativa no momento.<br>Aguarde as próximas rodadas!</p>';
+          return;
         }
-      })
-      .catch(() => {
-        document.getElementById('bets').innerHTML = '<p style="color:red">Erro ao carregar as apostas</p>';
-      });
+
+        const marketEmoji = {
+          "1X2": "Trophy",
+          "cartoes": "Yellow Card",
+          "escanteios": "Corner Flag",
+          "gols": "Soccer Ball",
+          "btts": "Handshake",
+          "over1.5": "Target"
+        };
+
+        data.active_bets.forEach(b => {
+          const emoji = marketEmoji[b.market] || "Money Bag";
+          el.innerHTML += `
+            <div class="value-bet">
+              <div class="match">${emoji} <strong>${b.match}</strong></div>
+              <div class="time">Hoje • ${b.market.toUpperCase()} • ${b.selection}</div>
+              <div class="odd-edge">
+                Odd: <strong>${b.odd}</strong> | 
+                Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
+              </div>
+              <div class="why">
+                <strong>POR QUÊ ESSA É VALUE BET?</strong><br>
+                ${b.why || "Análise completa do modelo OddGURU"}
+              </div>
+              <div class="suggestion">${b.suggestion || "APOSTE AGORA!"}</div>
+            </div>`;
+        });
+      } catch (err) {
+        document.getElementById('bets').innerHTML = '<p style="color:red">Erro ao carregar apostas</p>';
+      }
+    }
+
+    // Carrega na hora e atualiza a cada 30 segundos
+    loadBets();
+    setInterval(loadBets, 30000);
   </script>
-  <h2>CADASTRAR VALUE BET (TESTE)</h2>
-<button onclick="cadastrar()">CADASTRAR SÃO PAULO @1.80</button>
-<button onclick="cadastrarCartoes()">CADASTRAR OVER 5.5 CARTÕES</button>
-
-<script>
-async function cadastrar() {
-  await fetch('/api/add-bet', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      match: "São Paulo vs Bragantino",
-      home_team: "São Paulo",
-      away_team: "Bragantino",
-      market: "1X2",
-      selection: "São Paulo",
-      odd: 1.80,
-      edge: 0.26,
-      why: "8º em casa • Venceu 4 dos últimos 5 • Bragantino perdeu 3 dos últimos 5 fora"
-    })
-  });
-  alert("São Paulo cadastrado!");
-}
-
-async function cadastrarCartoes() {
-  await fetch('/api/add-bet', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      match: "São Paulo vs Bragantino",
-      market: "cartoes",
-      selection: "Over 5.5",
-      odd: 2.10,
-      edge: 0.38,
-      why: "Árbitro João Acácio • Média 6.2 cartões • Histórico: 7,6,8,5,6"
-    })
-  });
-  alert("Over 5.5 cartões cadastrado!");
-}
-</script>
 </body>
 </html>
