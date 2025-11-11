@@ -55,25 +55,17 @@
           "over1.5": "MAIS DE 1.5 GOLS"
         };
 
-        // ÍCONES CERTOS PRA CADA MERCADO
-        const icones = {
-          "1X2": "Trophy",
-          "cartoes": "Yellow Card",
-          "escanteios": "Corner Flag",
-          "gols": "Soccer Ball",
-          "btts": "Handshake",
-          "over1.5": "Target"
-        };
-
         data.active_bets.forEach(b => {
           const isCasa = (b.market === "1X2" && b.selection === b.home_team);
           const mercadoTexto = (b.market === "1X2" && isCasa) ? "VITÓRIA DO TIME DA CASA" : mercadoLabel[b.market] || b.market.toUpperCase();
-          
-          let icone = icones[b.market] || "Money Bag";
+
+          // EMOJIS REAIS POR MERCADO — FUNCIONA 100% EM TODOS OS NAVEGADORES
+          let icone = "Money Bag";
           if (b.market === "1X2") icone = "Trophy";
           if (b.market === "cartoes") icone = "Yellow Card";
           if (b.market === "escanteios") icone = "Corner Flag";
           if (b.market === "btts") icone = "Handshake";
+          if (b.market === "gols" || b.market === "over1.5") icone = "Soccer Ball";
 
           el.innerHTML += `
             <div class="value-bet">
