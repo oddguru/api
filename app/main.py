@@ -1,13 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from supabase import create_client
 from pydantic import BaseModel
 import datetime
 import requests
+import os
 
 app = FastAPI(title="OddGuru PRO v2")
 
+# ===== CORS =====
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,11 +18,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ===== SUPABASE =====
 supabase = create_client(
-    "https://tvhtsdzaqhketkolnnwj.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2aHRzZHphcWhrZXRrb2xubndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MzYyNzgsImV4cCI6MjA3ODQxMjI3OH0.EhOZYVdUNQYIFD3yfb7RfRQLRJJGyoruRtqUaySujOY"
+    os.getenv("SUPABASE_URL", "https://tvhtsdzaqhketkolnnwj.supabase.co"),
+    os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
 )
 
+# ===== MODELOS =====
 class BetIn(BaseModel):
     match: str
     home_team: str
@@ -37,6 +41,8 @@ class BetResult(BaseModel):
     selection: str
     result: str
 
+# ===== ROTAS =====
+
 @app.post("/api/add-bet")
 def add_bet(bet: BetIn):
     data = bet.dict()
@@ -52,12 +58,12 @@ def record_result(res: BetResult):
 
 @app.get("/api/active-bets")
 def active_bets():
-    data = supabase.table("bets").select("*").is_("result", "null").order("bet_date", desc=True).execute()
+    data = supabase.table("bets").select("*").is_("result", None).order("bet_date", desc=True).execute()
     return {"active_bets": data.data}
 
 @app.get("/api/history")
 def history():
-    data = supabase.table("bets").select("*").not_.is_("result", "null").order("created_at", desc=True).execute()
+    data = supabase.table("bets").select("*").not_.is_("result", None).order("created_at", desc=True).execute()
     bets = data.data
     total = len(bets)
     wins = len([b for b in bets if b["result"] == "win"])
@@ -68,13 +74,13 @@ def history():
         "profit": round(profit, 2), "roi": f"{roi:.1f}%", "history": bets[:50]
     }
 
-# === API GRÁTIS ILIMITADA (football-data.org v2 — NUNCA BLOQUEIA!) ===
+# ===== FOOTBALL DATA =====
 @app.get("/api/update-today")
 def update_today():
-    date_to_use = "2025-11-09"  # Mude pra datetime.now().strftime("%Y-%m-%d") quando quiser automático
+    date_to_use = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    url = f"https://api.football-data.org/v2/competitions/BSA/matches?dateFrom={date_to_use}&dateTo={date_to_use}"
-    headers = {"X-Auth-Token": "32e639f6478bc47cea79a1e61bdfd7891df69754347fed1dadceacda5a384a18BCA69a4062b62f0434d966d5aad2e78a1df"}  # sua chave corrigida
+    url = f"https://api.football-data.org/v4/competitions/BSA/matches?dateFrom={date_to_use}&dateTo={date_to_use}"
+    headers = {"X-Auth-Token": os.getenv("FOOTBALL_API_KEY", "69a4062b62f0434d966d5aad2e78a1df")}
 
     try:
         resp = requests.get(url, headers=headers, timeout=15)
@@ -102,9 +108,14 @@ def update_today():
 
         for bt in bets:
             data = {
-                "match": match, "home_team": home, "away_team": away,
-                "market": bt["market"], "selection": bt["selection"],
-                "odd": bt["odd"], "edge": bt["edge"], "why": bt["why"],
+                "match": match,
+                "home_team": home,
+                "away_team": away,
+                "market": bt["market"],
+                "selection": bt["selection"],
+                "odd": bt["odd"],
+                "edge": bt["edge"],
+                "why": bt["why"],
                 "bet_date": datetime.datetime.now().isoformat()
             }
             supabase.table("bets").delete().eq("match", match).eq("market", bt["market"]).execute()
@@ -113,4 +124,5 @@ def update_today():
 
     return {"status": f"{added} value bets cadastradas!", "jogos": len(matches)}
 
+# ===== FRONT =====
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
