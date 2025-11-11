@@ -68,22 +68,22 @@ def record_result(res: BetResult):
         .execute()
     return {"status": "Resultado registrado", "match": res.match, "result": res.result}
 
-# === TODAS AS APOSTAS ATIVAS (FRONTEND) ===
+# === TODAS AS APOSTAS ATIVAS (CORRIGIDO) ===
 @app.get("/api/active-bets")
 def active_bets():
     data = supabase.table("bets")\
         .select("*")\
-        .is_("result", None)\
+        .is_("result", "null")\
         .order("bet_date", desc=True)\
         .execute()
     return {"active_bets": data.data}
 
-# === HISTÓRICO + ROI ===
+# === HISTÓRICO + ROI (CORRIGIDO) ===
 @app.get("/api/history")
 def history():
     data = supabase.table("bets")\
         .select("*")\
-        .not_.is_("result", None)\
+        .not_.is_("result", "null")\
         .order("created_at", desc=True)\
         .execute()
     
