@@ -108,5 +108,44 @@
         document.getElementById('bets').innerHTML = '<p style="color:red">Erro ao carregar as apostas</p>';
       });
   </script>
+  <h2>CADASTRAR VALUE BET (TESTE)</h2>
+<button onclick="cadastrar()">CADASTRAR SÃO PAULO @1.80</button>
+<button onclick="cadastrarCartoes()">CADASTRAR OVER 5.5 CARTÕES</button>
+
+<script>
+async function cadastrar() {
+  await fetch('/api/add-bet', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      match: "São Paulo vs Bragantino",
+      home_team: "São Paulo",
+      away_team: "Bragantino",
+      market: "1X2",
+      selection: "São Paulo",
+      odd: 1.80,
+      edge: 0.26,
+      why: "8º em casa • Venceu 4 dos últimos 5 • Bragantino perdeu 3 dos últimos 5 fora"
+    })
+  });
+  alert("São Paulo cadastrado!");
+}
+
+async function cadastrarCartoes() {
+  await fetch('/api/add-bet', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      match: "São Paulo vs Bragantino",
+      market: "cartoes",
+      selection: "Over 5.5",
+      odd: 2.10,
+      edge: 0.38,
+      why: "Árbitro João Acácio • Média 6.2 cartões • Histórico: 7,6,8,5,6"
+    })
+  });
+  alert("Over 5.5 cartões cadastrado!");
+}
+</script>
 </body>
 </html>
