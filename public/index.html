@@ -45,16 +45,7 @@
           return;
         }
 
-        // MAPEAMENTO CLARO PARA O CLIENTE
-        const mercadoLabel = {
-          "1X2": "VITÓRIA / EMPATE / DERROTA",
-          "cartoes": "TOTAL DE CARTÕES",
-          "escanteios": "TOTAL DE ESCANTEIOS",
-          "gols": "TOTAL DE GOLS",
-          "btts": "AMBAS AS EQUIPES MARCAM",
-          "over1.5": "MAIS DE 1.5 GOLS"
-        };
-
+        // EMOJIS REAIS (Unicode) — nunca mais aparece texto!
         const emoji = {
           "1X2": "Trophy",
           "cartoes": "Yellow Card",
@@ -64,13 +55,25 @@
           "over1.5": "Target"
         };
 
+        const mercadoLabel = {
+          "1X2": "VITÓRIA DO TIME DA CASA",
+          "cartoes": "TOTAL DE CARTÕES",
+          "escanteios": "TOTAL DE ESCANTEIOS",
+          "gols": "TOTAL DE GOLS",
+          "btts": "AMBAS AS EQUIPES MARCAM",
+          "over1.5": "MAIS DE 1.5 GOLS"
+        };
+
         data.active_bets.forEach(b => {
+          const isCasa = (b.market === "1X2" && b.selection === b.home_team);
+          const mercadoTexto = (b.market === "1X2" && isCasa) ? "VITÓRIA DO TIME DA CASA" : mercadoLabel[b.market] || b.market.toUpperCase();
+
           el.innerHTML += `
             <div class="value-bet">
               <div class="match">${emoji[b.market] || "Money Bag"} <strong>${b.match}</strong></div>
               <div class="mercado">
-                <strong>${mercadoLabel[b.market] || b.market.toUpperCase()}</strong><br>
-                ${b.selection}
+                <strong>${mercadoTexto}</strong><br>
+                <span style="color:#0ff;font-size:1.3em;font-weight:bold;">${b.selection}</span>
               </div>
               <div class="odd-edge">
                 Odd: <strong>${b.odd}</strong> | Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
