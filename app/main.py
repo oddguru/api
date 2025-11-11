@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from supabase import create_client
 from pydantic import BaseModel
 import datetime
+import requests   # <—— ESSA LINHA ESTAVA FALTANDO!
 
 app = FastAPI(title="OddGuru PRO v2")
 
@@ -67,13 +68,11 @@ def history():
         "profit": round(profit, 2), "roi": f"{roi:.1f}%", "history": bets[:50]
     }
 
-# === API GRÁTIS ILIMITADA (sem chave, nunca mais erro) ===
+# === API GRÁTIS ILIMITADA + IMPORT CORRETO ===
 @app.get("/api/update-today")
 def update_today():
-    # Data de teste (09/11 - 10 jogos)
     date_to_use = "2025-11-09"
 
-    # API GRÁTIS ILIMITADA (sem chave, funciona pra sempre)
     url = f"https://api-football.com/demo/api/v2/fixtures/date/{date_to_use}"
     
     try:
@@ -89,14 +88,13 @@ def update_today():
 
     added = 0
     for f in fixtures:
-        if f.get("league_id") != 71:  # só Brasileirão
+        if f.get("league_id") != 71:
             continue
 
         home = f.get("homeTeam", {}).get("team_name", "Home")
         away = f.get("awayTeam", {}).get("team_name", "Away")
         match = f"{home} vs {away}"
 
-        # VALORES REALISTAS (médias do Brasileirão)
         bets_to_add = [
             {"market": "1X2", "selection": home, "odd": 2.15, "edge": 0.33, "why": f"{home} venceu 7/10 em casa"},
             {"market": "cartoes", "selection": "Over 5.5", "odd": 1.98, "edge": 0.39, "why": "Média 6.4 cartões nos últimos 5 jogos"},
@@ -116,6 +114,6 @@ def update_today():
             supabase.table("bets").insert(data).execute()
             added += 1
 
-    return {"status": f"{added} value bets cadastradas com API GRÁTIS ILIMITADA!", "jogos": len(fixtures)}
+    return {"status": f"{added} value bets cadastradas COM SUCESSO!", "jogos": len(fixtures)}
 
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
