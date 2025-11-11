@@ -19,7 +19,7 @@
     .suggestion{color:#00ff88;font-size:1.6em;font-weight:bold;margin-top:20px;}
     .no-bets{color:#aaa;font-size:1.4em;margin:50px;text-align:center;}
     .footer{margin-top:50px;color:#666;font-size:0.9em;text-align:center;}
-    .icon {font-size:1.2em;margin-right:5px;}
+    .icon {font-size:1.4em;margin-right:8px;vertical-align:middle;}
   </style>
 </head>
 <body>
@@ -55,13 +55,29 @@
           "over1.5": "MAIS DE 1.5 GOLS"
         };
 
+        // ÍCONES CERTOS PRA CADA MERCADO
+        const icones = {
+          "1X2": "Trophy",
+          "cartoes": "Yellow Card",
+          "escanteios": "Corner Flag",
+          "gols": "Soccer Ball",
+          "btts": "Handshake",
+          "over1.5": "Target"
+        };
+
         data.active_bets.forEach(b => {
           const isCasa = (b.market === "1X2" && b.selection === b.home_team);
           const mercadoTexto = (b.market === "1X2" && isCasa) ? "VITÓRIA DO TIME DA CASA" : mercadoLabel[b.market] || b.market.toUpperCase();
+          
+          let icone = icones[b.market] || "Money Bag";
+          if (b.market === "1X2") icone = "Trophy";
+          if (b.market === "cartoes") icone = "Yellow Card";
+          if (b.market === "escanteios") icone = "Corner Flag";
+          if (b.market === "btts") icone = "Handshake";
 
           el.innerHTML += `
             <div class="value-bet">
-              <div class="match"><span class="icon">🏆</span><strong>${b.match}</strong></div>
+              <div class="match"><span class="icon">${icone}</span><strong>${b.match}</strong></div>
               <div class="mercado">
                 <strong>${mercadoTexto}</strong><br>
                 <span style="color:#0ff;font-size:1.3em;font-weight:bold;">${b.selection}</span>
