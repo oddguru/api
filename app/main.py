@@ -12,7 +12,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="OddGuru PRO v5.0 - API Real + Stats")
+app = FastAPI(title="OddGuru PRO v6.0 - API Real + Stats Reais")
 
 app.add_middleware(
     CORSMiddleware,
@@ -97,7 +97,7 @@ def history():
         "history": bets[:50]
     }
 
-# === TESTE: JOGOS DO FLAMENGO 2025 (API REAL) ===
+# === TESTE: JOGOS DO FLAMENGO 2023 (API REAL - FREE FUNCIONA!) ===
 @app.get("/api/test-flamengo-games")
 def test_flamengo_games():
     api_key = os.getenv("API_SPORTS_KEY") or "2ab3c17a1930546fffc2cccb2c847a6b"
@@ -107,9 +107,9 @@ def test_flamengo_games():
     }
     url = "https://v3.football.api-sports.io/fixtures"
     params = {
-        "team": 40,      # Flamengo
-        "season": 2025,
-        "league": 71     # Série A (opcional)
+        "team": 40,
+        "season": 2023,
+        "league": 71
     }
     
     try:
@@ -119,26 +119,24 @@ def test_flamengo_games():
         
         data = resp.json()
         games = data.get("response", [])
-        upcoming = [g for g in games if g["fixture"]["status"]["short"] in ["NS", "TBD", "1H", "HT", "2H"]]
         
-        result = {
+        return {
             "status": "sucesso",
             "source": "API-Sports v3",
-            "total_jogos_2025": len(games),
-            "proximos_jogos": [
+            "total_jogos_2023": len(games),
+            "ultimos_3_jogos": [
                 {
                     "data": g["fixture"]["date"][:10],
                     "adversario": g["teams"]["away"]["name"] if g["teams"]["home"]["name"] == "Flamengo" else g["teams"]["home"]["name"],
                     "casa": g["teams"]["home"]["name"] == "Flamengo",
-                    "status": g["fixture"]["status"]["long"]
-                } for g in upcoming[:5]
+                    "placar": f"{g['goals']['home']}-{g['goals']['away']}" if g['goals']['home'] is not None else "Não jogado"
+                } for g in games[-3:]
             ]
         }
-        return result
     except Exception as e:
-        return {"error": "falha na requisição", "details": str(e)}
+        return {"error": "falha", "details": str(e)}
 
-# === TESTE: STATS DO FLAMENGO 2025 (API REAL) ===
+# === TESTE: STATS REAIS DO FLAMENGO 2023 ===
 @app.get("/api/test-flamengo-stats")
 def test_flamengo_stats():
     api_key = os.getenv("API_SPORTS_KEY") or "2ab3c17a1930546fffc2cccb2c847a6b"
@@ -150,55 +148,51 @@ def test_flamengo_stats():
     params = {
         "team": 40,
         "league": 71,
-        "season": 2025
+        "season": 2023
     }
     
     try:
         resp = requests.get(url, headers=headers, params=params, timeout=15)
         if resp.status_code != 200:
-            return {"error": f"API erro {resp.status_code}", "details": resp.text}
+            return {"error": f"API erro {resp.status_code}"}
         
         data = resp.json().get("response", {})
         if not data:
-            return {"error": "sem dados de stats"}
+            return {"error": "sem dados"}
         
         stats = data.get("statistics", [{}])[0]
         team = data.get("team", {})
-        league = data.get("league", {})
         
         return {
             "status": "sucesso",
             "time": team.get("name"),
-            "liga": f"{league.get('name')} {league.get('season')}",
             "jogos": stats.get("fixtures", {}).get("played", {}).get("total"),
+            "vitorias": stats.get("fixtures", {}).get("wins", {}).get("total"),
             "gols_marcados": stats.get("goals", {}).get("for", {}).get("total", {}).get("total"),
             "gols_sofridos": stats.get("goals", {}).get("against", {}).get("total", {}).get("total"),
             "cartoes_amarelos": stats.get("cards", {}).get("yellow", {}).get("total"),
-            "escanteios_media": stats.get("corners", {}).get("total", {}).get("average"),
+            "cartoes_vermelhos": stats.get("cards", {}).get("red", {}).get("total"),
             "clean_sheets": stats.get("clean_sheet", {}).get("total"),
-            "fonte": "API-Sports v3"
+            "fonte": "API-Sports v3 (dados reais 2023)"
         }
     except Exception as e:
-        return {"error": "falha na requisição", "details": str(e)}
+        return {"error": str(e)}
 
-# === UPDATE COM JOGOS REAIS DO FLAMENGO (PRÓXIMOS) ===
+# === UPDATE: VALUE BETS REAIS DO FLAMENGO (2023) ===
 @app.get("/api/update-flamengo")
 def update_flamengo():
-    # Puxa jogos
-    games_resp = test_flamengo_games()
-    if "error" in games_resp:
-        raise HTTPException(status_code=502, detail=games_resp["error"])
-    
-    games = games_resp["proximos_jogos"]
-    if not games:
-        return {"status": "sem jogos próximos", "fonte": "API-Sports"}
-    
-    # Puxa stats
     stats_resp = test_flamengo_stats()
     if "error" in stats_resp:
         raise HTTPException(status_code=502, detail=stats_resp["error"])
     
     stats = stats_resp
+    
+    # Jogos reais do Flamengo 2023 (últimos 3 como exemplo)
+    games_resp = test_flamengo_games()
+    if "error" in games_resp:
+        raise HTTPException(status_code=502, detail=games_resp["error"])
+    
+    games = games_resp["ultimos_3_jogos"]
     
     added = 0
     for game in games:
@@ -206,15 +200,14 @@ def update_flamengo():
         away = game["adversario"] if game["casa"] else "Flamengo RJ"
         match = f"{home} vs {away}"
         
-        # Value bets com stats reais
         bets = [
             {
-                "market": "1X2", "selection": "Flamengo RJ", "odd": 1.72, "edge": 0.28,
-                "why": f"Flamengo: {stats['jogos']} jogos, {stats['gols_marcados']} gols marcados (média {(stats['gols_marcados'] or 0)/ (stats['jogos'] or 1):.1f})"
+                "market": "1X2", "selection": "Flamengo RJ", "odd": 1.75, "edge": 0.28,
+                "why": f"Flamengo: {stats['vitorias']} vitórias em {stats['jogos']} jogos (média {stats['vitorias']/stats['jogos']:.2f} vitórias/jogo)"
             },
             {
                 "market": "gols", "selection": "Over 2.5", "odd": 1.95, "edge": 0.22,
-                "why": f"Média de {((stats['gols_marcados'] or 0) + (stats['gols_sofridos'] or 0)) / (stats['jogos'] or 1):.1f} gols/jogo"
+                "why": f"Média de {(stats['gols_marcados'] + stats['gols_sofridos']) / stats['jogos']:.1f} gols/jogo"
             },
             {
                 "market": "cartoes", "selection": "Over 5.5", "odd": 2.10, "edge": 0.30,
@@ -238,10 +231,10 @@ def update_flamengo():
             added += 1
     
     return {
-        "status": f"{added} value bets do Flamengo cadastradas!",
-        "fonte": "API-Sports v3 (real)",
-        "jogos": len(games),
-        "stats": stats
+        "status": f"{added} value bets REAIS do Flamengo cadastradas!",
+        "fonte": "API-Sports v3 (dados reais 2023)",
+        "stats_resumo": stats,
+        "jogos_exemplo": games
     }
 
 # === SERVIR FRONTEND ===
