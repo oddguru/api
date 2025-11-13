@@ -146,7 +146,7 @@ def test_flamengo_stats():
     }
     url = "https://v3.football.api-sports.io/teams/statistics"
     params = {
-        "team": 40,
+        "team": 127,
         "league": 71,
         "season": 2023
     }
