@@ -107,7 +107,7 @@ def test_flamengo_games():
     }
     url = "https://v3.football.api-sports.io/fixtures"
     params = {
-        "team": 40,
+        "team": 127,
         "season": 2023,
         "league": 71
     }
