@@ -12,7 +12,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="OddGuru PRO v3.1 - IA + Value Bets")
+app = FastAPI(title="OddGuru PRO v4.0 - IA + Value Bets")
 
 app.add_middleware(
     CORSMiddleware,
@@ -97,52 +97,72 @@ def history():
         "history": bets[:50]
     }
 
-# === UPDATE COM API REAL (SEM FALLBACK) ===
+# === UPDATE COM API-SPORTS v3 (Série A 2025) ===
 @app.get("/api/update-today")
-def update_today():
-    today = datetime.date.today().strftime("%Y-%m-%d")
-    api_key = os.getenv("FOOTBALL_API_KEY")
+def update_today(date: str = None):
+    use_date = date or datetime.date.today().strftime("%Y-%m-%d")
+    
+    # Validação de data
+    try:
+        parsed_date = datetime.date.fromisoformat(use_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de data inválido: use YYYY-MM-DD")
 
+    api_key = os.getenv("API_SPORTS_KEY")
     if not api_key:
-        logger.error("FOOTBALL_API_KEY não configurada no Render")
+        logger.error("API_SPORTS_KEY não configurada no Render")
         raise HTTPException(status_code=500, detail="API key não configurada")
 
     try:
-        headers = {"X-Auth-Token": api_key}
-        url = "https://api.football-data.org/v4/competitions/2013/matches"
-        params = {"dateFrom": today, "dateTo": today}
+        headers = {
+            "x-apisports-key": api_key,
+            "x-rapidapi-host": "v3.football.api-sports.io"
+        }
+        url = "https://v3.football.api-sports.io/fixtures"
+        params = {
+            "date": use_date,
+            "league": 71,      # Brasileirão Série A
+            "season": 2025     # Temporada atual
+        }
         
-        logger.info(f"Buscando jogos reais do Brasileirão para {today}...")
-        resp = requests.get(url, headers=headers, params=params, timeout=12)
+        logger.info(f"Buscando jogos do Brasileirão para {use_date}...")
+        resp = requests.get(url, headers=headers, params=params, timeout=15)
+
+        logger.info(f"API Status: {resp.status_code} | Preview: {resp.text[:300]}")
 
         if resp.status_code != 200:
-            logger.error(f"API error {resp.status_code}: {resp.text}")
-            raise HTTPException(status_code=502, detail=f"Erro na API: {resp.status_code}")
+            error_msg = resp.json().get("message", resp.text) if resp.text else "Erro desconhecido"
+            logger.error(f"API erro {resp.status_code}: {error_msg}")
+            raise HTTPException(status_code=502, detail=f"Erro na API-Sports: {resp.status_code}")
 
         data = resp.json()
-        matches = data.get("matches", [])
+        matches = data.get("response", [])
 
         if not matches:
-            logger.info(f"Nenhum jogo encontrado para {today}")
+            logger.info(f"Nenhum jogo encontrado para {use_date}")
             return {
-                "status": "Nenhum jogo hoje",
-                "source": "API real",
+                "status": "Nenhum jogo na data",
+                "source": "API-Sports",
+                "data": use_date,
                 "jogos": 0,
-                "data": today,
-                "bets_added": 0
+                "bets_added": 0,
+                "dica": "Próxima rodada: 16/11/2025. Teste com ?date=2025-11-16"
             }
 
-        logger.info(f"Encontrados {len(matches)} jogos reais")
+        logger.info(f"Encontrados {len(matches)} jogos reais para {use_date}")
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Falha na conexão com API: {e}")
+        logger.error(f"Falha na conexão com API-Sports: {e}")
         raise HTTPException(status_code=502, detail="Falha na conexão com a API")
+    except Exception as e:
+        logger.error(f"Erro inesperado: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # === GERA 5 BETS POR JOGO (SÓ COM DADOS REAIS) ===
+    # === GERA 5 VALUE BETS POR JOGO ===
     added = 0
     for m in matches:
-        home = m["homeTeam"]["name"]
-        away = m["awayTeam"]["name"]
+        home = m["teams"]["home"]["name"]
+        away = m["teams"]["away"]["name"]
         match = f"{home} vs {away}"
 
         bets = [
@@ -168,13 +188,15 @@ def update_today():
             supabase.table("bets").insert(data).execute()
             added += 1
 
-    logger.info(f"{added} value bets reais cadastradas!")
+    logger.info(f"{added} value bets reais cadastradas para {use_date}")
     return {
         "status": f"{added} value bets reais cadastradas!",
-        "source": "API real",
+        "source": "API-Sports v3",
+        "data": use_date,
         "jogos": len(matches),
-        "data": today,
-        "bets_added": added
+        "bets_added": added,
+        "exemplo_jogo": f"{matches[0]['teams']['home']['name']} vs {matches[0]['teams']['away']['name']}",
+        "api": "https://api-sports.io"
     }
 
 # === SERVIR FRONTEND ===
