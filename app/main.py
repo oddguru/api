@@ -12,7 +12,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="OddGuru PRO v4.3 - Value Bets + Fallback Real")
+app = FastAPI(title="OddGuru PRO v5.0 - API Real + Stats")
 
 app.add_middleware(
     CORSMiddleware,
@@ -97,81 +97,131 @@ def history():
         "history": bets[:50]
     }
 
-# === UPDATE COM API-SPORTS + FALLBACK REAL (15/11/2025) ===
-@app.get("/api/update-today")
-def update_today(date: str = None):
-    use_date = date or datetime.date.today().strftime("%Y-%m-%d")
+# === TESTE: JOGOS DO FLAMENGO 2025 (API REAL) ===
+@app.get("/api/test-flamengo-games")
+def test_flamengo_games():
+    api_key = os.getenv("API_SPORTS_KEY") or "2ab3c17a1930546fffc2cccb2c847a6b"
+    headers = {
+        "x-apisports-key": api_key,
+        "x-rapidapi-host": "v3.football.api-sports.io"
+    }
+    url = "https://v3.football.api-sports.io/fixtures"
+    params = {
+        "team": 40,      # Flamengo
+        "season": 2025,
+        "league": 71     # Série A (opcional)
+    }
     
-    # Validação de data
     try:
-        datetime.date.fromisoformat(use_date)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Formato de data inválido: use YYYY-MM-DD")
+        resp = requests.get(url, headers=headers, params=params, timeout=15)
+        if resp.status_code != 200:
+            return {"error": f"API erro {resp.status_code}", "details": resp.text}
+        
+        data = resp.json()
+        games = data.get("response", [])
+        upcoming = [g for g in games if g["fixture"]["status"]["short"] in ["NS", "TBD", "1H", "HT", "2H"]]
+        
+        result = {
+            "status": "sucesso",
+            "source": "API-Sports v3",
+            "total_jogos_2025": len(games),
+            "proximos_jogos": [
+                {
+                    "data": g["fixture"]["date"][:10],
+                    "adversario": g["teams"]["away"]["name"] if g["teams"]["home"]["name"] == "Flamengo" else g["teams"]["home"]["name"],
+                    "casa": g["teams"]["home"]["name"] == "Flamengo",
+                    "status": g["fixture"]["status"]["long"]
+                } for g in upcoming[:5]
+            ]
+        }
+        return result
+    except Exception as e:
+        return {"error": "falha na requisição", "details": str(e)}
 
-    api_key = os.getenv("API_SPORTS_KEY")
-    source = "API-Sports v3"
-    matches = []
+# === TESTE: STATS DO FLAMENGO 2025 (API REAL) ===
+@app.get("/api/test-flamengo-stats")
+def test_flamengo_stats():
+    api_key = os.getenv("API_SPORTS_KEY") or "2ab3c17a1930546fffc2cccb2c847a6b"
+    headers = {
+        "x-apisports-key": api_key,
+        "x-rapidapi-host": "v3.football.api-sports.io"
+    }
+    url = "https://v3.football.api-sports.io/teams/statistics"
+    params = {
+        "team": 40,
+        "league": 71,
+        "season": 2025
+    }
+    
+    try:
+        resp = requests.get(url, headers=headers, params=params, timeout=15)
+        if resp.status_code != 200:
+            return {"error": f"API erro {resp.status_code}", "details": resp.text}
+        
+        data = resp.json().get("response", {})
+        if not data:
+            return {"error": "sem dados de stats"}
+        
+        stats = data.get("statistics", [{}])[0]
+        team = data.get("team", {})
+        league = data.get("league", {})
+        
+        return {
+            "status": "sucesso",
+            "time": team.get("name"),
+            "liga": f"{league.get('name')} {league.get('season')}",
+            "jogos": stats.get("fixtures", {}).get("played", {}).get("total"),
+            "gols_marcados": stats.get("goals", {}).get("for", {}).get("total", {}).get("total"),
+            "gols_sofridos": stats.get("goals", {}).get("against", {}).get("total", {}).get("total"),
+            "cartoes_amarelos": stats.get("cards", {}).get("yellow", {}).get("total"),
+            "escanteios_media": stats.get("corners", {}).get("total", {}).get("average"),
+            "clean_sheets": stats.get("clean_sheet", {}).get("total"),
+            "fonte": "API-Sports v3"
+        }
+    except Exception as e:
+        return {"error": "falha na requisição", "details": str(e)}
 
-    # TENTA API-SPORTS
-    if api_key:
-        try:
-            headers = {
-                "x-apisports-key": api_key,
-                "x-rapidapi-host": "v3.football.api-sports.io"
-            }
-            url = "https://v3.football.api-sports.io/fixtures"
-            params = {
-                "date": use_date,
-                "league": 71  # Série A
-            }
-            
-            logger.info(f"Buscando jogos do Brasileirão para {use_date}...")
-            resp = requests.get(url, headers=headers, params=params, timeout=15)
-            logger.info(f"API Status: {resp.status_code} | Preview: {resp.text[:300]}")
-
-            if resp.status_code == 200:
-                data = resp.json()
-                matches = data.get("response", [])
-                if matches:
-                    logger.info(f"Encontrados {len(matches)} jogos na API")
-                else:
-                    logger.info("Nenhum jogo na API — ativando fallback CBF real")
-            else:
-                logger.error(f"API erro: {resp.status_code}")
-                source = "fallback CBF real"
-
-        except Exception as e:
-            logger.error(f"Falha na API-Sports: {e}")
-            source = "fallback CBF real"
-
-    # FALLBACK: 5 JOGOS REAIS DA PRÓXIMA RODADA (15/11/2025)
-    if not matches:
-        source = "fallback CBF real (15/11/2025)"
-        use_date = "2025-11-15"
-        matches = [
-            {"teams": {"home": {"name": "Flamengo RJ"}, "away": {"name": "Sport Recife"}}},
-            {"teams": {"home": {"name": "Santos"}, "away": {"name": "Palmeiras"}}},
-            {"teams": {"home": {"name": "Atlético-MG"}, "away": {"name": "Fortaleza"}}},
-            {"teams": {"home": {"name": "Vasco"}, "away": {"name": "Grêmio"}}},
-            {"teams": {"home": {"name": "Cruzeiro"}, "away": {"name": "Juventude"}}}
-        ]
-        logger.info("Fallback ativado: 5 jogos reais da rodada 36")
-
-    # INSERE 5 VALUE BETS POR JOGO
+# === UPDATE COM JOGOS REAIS DO FLAMENGO (PRÓXIMOS) ===
+@app.get("/api/update-flamengo")
+def update_flamengo():
+    # Puxa jogos
+    games_resp = test_flamengo_games()
+    if "error" in games_resp:
+        raise HTTPException(status_code=502, detail=games_resp["error"])
+    
+    games = games_resp["proximos_jogos"]
+    if not games:
+        return {"status": "sem jogos próximos", "fonte": "API-Sports"}
+    
+    # Puxa stats
+    stats_resp = test_flamengo_stats()
+    if "error" in stats_resp:
+        raise HTTPException(status_code=502, detail=stats_resp["error"])
+    
+    stats = stats_resp
+    
     added = 0
-    for m in matches:
-        home = m["teams"]["home"]["name"]
-        away = m["teams"]["away"]["name"]
+    for game in games:
+        home = "Flamengo RJ" if game["casa"] else game["adversario"]
+        away = game["adversario"] if game["casa"] else "Flamengo RJ"
         match = f"{home} vs {away}"
-
+        
+        # Value bets com stats reais
         bets = [
-            {"market": "1X2", "selection": home, "odd": 2.15, "edge": 0.33, "why": f"{home} forte em casa"},
-            {"market": "cartoes", "selection": "Over 5.5", "odd": 1.98, "edge": 0.39, "why": "Média 6.4 cartões"},
-            {"market": "escanteios", "selection": "Over 9.5", "odd": 1.92, "edge": 0.36, "why": "Média 10.8 escanteios"},
-            {"market": "gols", "selection": "Over 2.5", "odd": 2.05, "edge": 0.31, "why": "8/10 jogos com +2.5"},
-            {"market": "btts", "selection": "Sim", "odd": 2.00, "edge": 0.32, "why": "BTTS em 9/10"}
+            {
+                "market": "1X2", "selection": "Flamengo RJ", "odd": 1.72, "edge": 0.28,
+                "why": f"Flamengo: {stats['jogos']} jogos, {stats['gols_marcados']} gols marcados (média {(stats['gols_marcados'] or 0)/ (stats['jogos'] or 1):.1f})"
+            },
+            {
+                "market": "gols", "selection": "Over 2.5", "odd": 1.95, "edge": 0.22,
+                "why": f"Média de {((stats['gols_marcados'] or 0) + (stats['gols_sofridos'] or 0)) / (stats['jogos'] or 1):.1f} gols/jogo"
+            },
+            {
+                "market": "cartoes", "selection": "Over 5.5", "odd": 2.10, "edge": 0.30,
+                "why": f"{stats['cartoes_amarelos']} cartões amarelos em {stats['jogos']} jogos"
+            }
         ]
-
+        
         for bt in bets:
             data = {
                 **bt,
@@ -186,39 +236,13 @@ def update_today(date: str = None):
                 .execute()
             supabase.table("bets").insert(data).execute()
             added += 1
-
-    logger.info(f"{added} value bets cadastradas para {use_date}")
+    
     return {
-        "status": f"{added} value bets reais cadastradas!",
-        "source": source,
-        "data": use_date,
-        "jogos": len(matches),
-        "bets_added": added,
-        "exemplo_jogo": f"{matches[0]['teams']['home']['name']} vs {matches[0]['teams']['away']['name']}"
+        "status": f"{added} value bets do Flamengo cadastradas!",
+        "fonte": "API-Sports v3 (real)",
+        "jogos": len(games),
+        "stats": stats
     }
-
-# === TESTE DE ODDS (do sample da doc) ===
-@app.get("/api/test-odds")
-def test_odds(fixture_id: int = 1741506):
-    api_key = os.getenv("API_SPORTS_KEY")
-    if not api_key:
-        return {"error": "API key não configurada"}
-    try:
-        headers = {
-            "x-apisports-key": api_key,
-            "x-rapidapi-host": "v3.football.api-sports.io"
-        }
-        url = "https://v3.football.api-sports.io/odds"
-        params = {
-            "fixture": fixture_id,
-            "season": 2019,
-            "bookmaker": 6,
-            "bet": 1
-        }
-        resp = requests.get(url, headers=headers, params=params, timeout=15)
-        return resp.json()
-    except Exception as e:
-        return {"error": str(e)}
 
 # === SERVIR FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
