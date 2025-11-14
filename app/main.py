@@ -60,3 +60,20 @@ async def serve_dashboard():
 @app.get("/health")
 async def health():
     return {"status": "online", "service": "OddGuru PRO"}
+
+# 3 INDEX
+
+@app.get("/api/teaser")
+async def get_teaser_bets():
+    try:
+        supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+        response = supabase.table('value_bets')\
+            .select('*')\
+            .eq('active', True)\
+            .order('edge', descending=True)\
+            .limit(3)\
+            .execute()
+        
+        return {"bets": response.data}
+    except Exception as e:
+        return {"bets": [], "error": str(e)}
