@@ -157,7 +157,7 @@ def generate_value_bets():
         return {"status": "sem jogos hoje"}
 
     added = 0
-    for fixture in fixtures[:5]:  # 5 jogos por dia
+    for fixture in fixtures[:5]:
         home = fixture["teams"]["home"]["name"]
         away = fixture["teams"]["away"]["name"]
         match = f"{home} vs {away}"
@@ -216,6 +216,36 @@ def generate_today():
 def clear_bets():
     supabase.table("bets").delete().execute()
     return {"status": "bets limpas"}
+
+# === TESTE FLAMENGO (FALLBACK) ===
+@app.get("/api/update-flamengo")
+def update_flamengo():
+    stats = {
+        "jogos": 38,
+        "vitorias": 21,
+        "gols_marcados": 65,
+        "gols_sofridos": 40,
+        "cartoes": 85
+    }
+    jogos_exemplos = [
+        {"home": "Flamengo", "away": "Athletico-PR"},
+        {"home": "São Paulo", "away": "Flamengo"},
+        {"home": "Flamengo", "away": "Santos"}
+    ]
+    added = 0
+    for jogo in jogos_exemplos:
+        match = f"{jogo['home']} vs {jogo['away']}"
+        bets = [
+            {"market": "1X2", "selection": "Flamengo", "odd": 1.75, "edge": 0.28, "why": "Flamengo forte em casa"},
+            {"market": "gols", "selection": "Over 2.5", "odd": 1.95, "edge": 0.22, "why": "Média alta de gols"},
+            {"market": "ambos marcam", "selection": "Sim", "odd": 1.85, "edge": 0.30, "why": "BTTS em 7/10 jogos"}
+        ]
+        for bt in bets:
+            data = {**bt, "match": match, "home_team": jogo["home"], "away_team": jogo["away"], "bet_date": datetime.datetime.utcnow().isoformat()}
+            supabase.table("bets").delete().eq("match", match).eq("market", bt["market"]).execute()
+            supabase.table("bets").insert(data).execute()
+            added += 1
+    return {"status": f"{added} bets do Flamengo (fallback) inseridas!"}
 
 # === SERVIR FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
