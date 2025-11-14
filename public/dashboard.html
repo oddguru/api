@@ -167,7 +167,13 @@
 
         filteredBets() {
           let f = this.bets;
-          if (this.filter !== 'all') f = f.filter(b => b.market === this.filter);
+          if (this.filter !== 'all') {
+            if (this.filter === 'ambos marcam') {
+              f = f.filter(b => b.market === 'ambos marcam');
+            } else {
+              f = f.filter(b => b.market === this.filter);
+            }
+          }
           return f;
         },
 
@@ -189,8 +195,5 @@
       }
     }
   </script>
-  <div class="bg-red-600 text-white p-4 text-center font-bold">
-  VERSÃO v2.1 — TESTE ATIVO!
-</div>
 </body>
 </html>
