@@ -6,9 +6,12 @@
   <title>Dashboard - OddGuru PRO</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0f0f1e, #1a1a2e); }
     .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.3); }
+    .table-container { min-width: 800px; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen gradient-bg">
@@ -25,35 +28,41 @@
       <div class="flex items-center space-x-6 text-sm">
         <span x-text="`ROI: ${stats.roi}`" class="font-bold text-green-400"></span>
         <span x-text="`Lucro: R$${stats.profit}`" class="font-bold text-green-400"></span>
-        <button @click="logout()" class="text-gray-400 hover:text-white">Sair</button>
+        <button @click="logout()" class="text-gray-400 hover:text-white transition">Sair</button>
       </div>
     </div>
   </header>
 
-  <!-- TOGGLE VIEW -->
-  <div class="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-    <div class="flex gap-2">
-      <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm">Todos</button>
-      <button @click="filter = '1X2'" :class="filter === '1X2' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm">1X2</button>
-      <button @click="filter = 'gols'" :class="filter === 'gols' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm">Gols</button>
-      <button @click="filter = 'cartoes'" :class="filter === 'cartoes' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm">Cartões</button>
-    </div>
-    <div class="flex gap-2">
-      <button @click="view = 'cards'" :class="view === 'cards' ? 'bg-purple-600' : 'bg-gray-700'" class="px-3 py-1 rounded text-xs">Cards</button>
-      <button @click="view = 'list'" :class="view === 'list' ? 'bg-purple-600' : 'bg-gray-700'" class="px-3 py-1 rounded text-xs">Lista</button>
+  <!-- FILTROS + TOGGLE -->
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="flex gap-2 flex-wrap">
+        <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm font-medium transition">Todos</button>
+        <button @click="filter = '1X2'" :class="filter === '1X2' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm font-medium transition">1X2</button>
+        <button @click="filter = 'gols'" :class="filter === 'gols' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm font-medium transition">Gols</button>
+        <button @click="filter = 'ambos marcam'" :class="filter === 'ambos marcam' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm font-medium transition">Ambos Marcam</button>
+        <button @click="filter = 'cartoes'" :class="filter === 'cartoes' ? 'bg-purple-600' : 'bg-gray-700'" class="px-4 py-2 rounded-lg text-sm font-medium transition">Cartões</button>
+      </div>
+      <div class="flex gap-2">
+        <button @click="view = 'cards'" :class="view === 'cards' ? 'bg-purple-600' : 'bg-gray-700'" class="px-3 py-1 rounded text-xs font-medium transition">Cards</button>
+        <button @click="view = 'list'" :class="view === 'list' ? 'bg-purple-600' : 'bg-gray-700'" class="px-3 py-1 rounded text-xs font-medium transition">Lista</button>
+      </div>
     </div>
   </div>
 
   <!-- CARDS VIEW -->
   <div x-show="view === 'cards'" class="max-w-7xl mx-auto px-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-    <template x-for="bet in filteredBets()" x-key="bet.id">
+    <template x-for="bet in sortedBets()" x-key="bet.id">
       <div class="bg-gray-800/60 backdrop-blur rounded-xl p-6 card-hover border border-gray-700">
         <div class="flex justify-between items-start mb-3">
           <h3 class="font-bold text-lg" x-text="bet.match"></h3>
-          <span class="text-xs px-2 py-1 rounded-full bg-yellow-600" x-text="'Pendente'"></span>
+          <span class="text-xs px-2 py-1 rounded-full bg-yellow-600">Pendente</span>
         </div>
         <div class="space-y-2 text-sm">
-          <p><span class="text-gray-400">Mercado:</span> <span x-text="bet.market"></span></p>
+          <p><span class="text-gray-400">Mercado:</span> 
+            <span x-text="bet.market === 'ambos marcam' ? 'Ambos Marcam' : bet.market"></span>
+          </p>
+          <p><span class="text-gray-400">Seleção:</span> <strong x-text="bet.selection"></strong></p>
           <p><span class="text-gray-400">Odd:</span> <span class="text-green-400 font-bold" x-text="bet.odd"></span></p>
           <p><span class="text-gray-400">Edge:</span> <span class="text-purple-400" x-text="`+${(bet.edge*100).toFixed(1)}%`"></span></p>
         </div>
@@ -61,58 +70,121 @@
           <p class="font-medium text-purple-400 mb-1">IA:</p>
           <p x-text="bet.why"></p>
         </div>
+        <a :href="`https://betano.com/?tag=oddguru_pro&market=${bet.market}&selection=${bet.selection}`" target="_blank"
+           class="block mt-4 text-center bg-green-600 py-2 rounded font-medium text-sm hover:bg-green-700 transition">
+          Apostar na Betano
+        </a>
       </div>
     </template>
   </div>
 
   <!-- LIST VIEW -->
-  <table x-show="view === 'list'" class="max-w-7xl mx-auto mx-4 text-sm text-left text-gray-300">
-    <thead class="text-xs uppercase bg-gray-800">
-      <tr>
-        <th class="px-4 py-3">Jogo</th>
-        <th class="px-4 py-3">Mercado</th>
-        <th class="px-4 py-3">Odd</th>
-        <th class="px-4 py-3">Edge</th>
-        <th class="px-4 py-3">IA</th>
-      </tr>
-    </thead>
-    <tbody>
-      <template x-for="bet in filteredBets()" x-key="bet.id">
-        <tr class="bg-gray-800/50 border-b border-gray-700 hover:bg-gray-700/50">
-          <td class="px-4 py-3" x-text="bet.match"></td>
-          <td class="px-4 py-3" x-text="bet.market + ' → ' + bet.selection"></td>
-          <td class="px-4 py-3 text-green-400" x-text="bet.odd"></td>
-          <td class="px-4 py-3 text-purple-400" x-text="`+${(bet.edge*100).toFixed(1)}%`"></td>
-          <td class="px-4 py-3 text-xs" x-text="bet.why"></td>
-        </tr>
-      </template>
-    </tbody>
-  </table>
+  <div x-show="view === 'list'" class="max-w-7xl mx-auto px-4 pb-12 overflow-x-auto">
+    <div class="table-container">
+      <table class="w-full text-sm text-left text-gray-300">
+        <thead class="text-xs uppercase bg-gray-800">
+          <tr>
+            <th class="px-4 py-3 cursor-pointer hover:bg-gray-700" @click="sortBy('match')">
+              Jogo <span x-text="sortKey === 'match' ? (sortAsc ? '↑' : '↓') : ''"></span>
+            </th>
+            <th class="px-4 py-3 cursor-pointer hover:bg-gray-700" @click="sortBy('market')">
+              Mercado <span x-text="sortKey === 'market' ? (sortAsc ? '↑' : '↓') : ''"></span>
+            </th>
+            <th class="px-4 py-3 cursor-pointer hover:bg-gray-700" @click="sortBy('odd')">
+              Odd <span x-text="sortKey === 'odd' ? (sortAsc ? '↑' : '↓') : ''"></span>
+            </th>
+            <th class="px-4 py-3 cursor-pointer hover:bg-gray-700" @click="sortBy('edge')">
+              Edge <span x-text="sortKey === 'edge' ? (sortAsc ? '↑' : '↓') : ''"></span>
+            </th>
+            <th class="px-4 py-3">IA</th>
+            <th class="px-4 py-3">Apostar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="bet in sortedBets()" x-key="bet.id">
+            <tr class="bg-gray-800/50 border-b border-gray-700 hover:bg-gray-700/50">
+              <td class="px-4 py-3 font-medium" x-text="bet.match"></td>
+              <td class="px-4 py-3">
+                <span x-text="bet.market === 'ambos marcam' ? 'Ambos Marcam' : bet.market"></span>
+                <span class="text-gray-400">→</span>
+                <span x-text="bet.selection"></span>
+              </td>
+              <td class="px-4 py-3 text-green-400 font-bold" x-text="bet.odd"></td>
+              <td class="px-4 py-3 text-purple-400" x-text="`+${(bet.edge*100).toFixed(1)}%`"></td>
+              <td class="px-4 py-3 text-xs max-w-xs" x-text="bet.why"></td>
+              <td class="px-4 py-3">
+                <a :href="`https://betano.com/?tag=oddguru_pro&market=${bet.market}&selection=${bet.selection}`" target="_blank"
+                   class="text-xs bg-green-600 px-3 py-1 rounded hover:bg-green-700 transition">
+                  Apostar
+                </a>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+    <div x-show="sortedBets().length === 0" class="text-center py-12 text-gray-400">
+      Nenhuma value bet ativa no momento.
+    </div>
+  </div>
 
+  <!-- SCRIPT -->
   <script>
     function dashboard() {
       return {
-        bets: [], stats: { roi: '0%', profit: '0', wins: 0, total: 0 },
-        filter: 'all', view: 'cards',
+        bets: [], 
+        stats: { roi: '0%', profit: '0', wins: 0, total: 0 },
+        filter: 'all', 
+        view: 'cards',
+        sortKey: 'edge', 
+        sortAsc: false,
 
         checkAuth() {
           if (!localStorage.getItem('token')) window.location.href = '/login.html';
         },
-        logout() { localStorage.removeItem('token'); window.location.href = '/'; },
+        logout() { 
+          localStorage.removeItem('token'); 
+          window.location.href = '/'; 
+        },
 
         async fetchData() {
-          const [active, history] = await Promise.all([
-            fetch('/api/active-bets').then(r => r.json()),
-            fetch('/api/history').then(r => r.json())
-          ]);
-          this.bets = active.active_bets.map(b => ({ ...b, result: null }));
-          this.stats = { roi: history.roi, profit: history.profit };
+          try {
+            const [active, history] = await Promise.all([
+              fetch('/api/active-bets').then(r => r.json()),
+              fetch('/api/history').then(r => r.json())
+            ]);
+            this.bets = active.active_bets.map(b => ({ ...b, result: null }));
+            this.stats = { 
+              roi: history.roi, 
+              profit: history.profit,
+              wins: history.wins,
+              total: history.total_bets
+            };
+          } catch (e) {
+            console.error('Erro no fetch:', e);
+          }
         },
 
         filteredBets() {
           let f = this.bets;
           if (this.filter !== 'all') f = f.filter(b => b.market === this.filter);
-          return f.sort((a, b) => b.edge - a.edge);
+          return f;
+        },
+
+        sortBy(key) {
+          if (this.sortKey === key) this.sortAsc = !this.sortAsc;
+          else { this.sortKey = key; this.sortAsc = false; }
+        },
+
+        sortedBets() {
+          let f = this.filteredBets();
+          return f.sort((a, b) => {
+            let av = a[this.sortKey], bv = b[this.sortKey];
+            if (this.sortKey === 'edge' || this.sortKey === 'odd') {
+              return this.sortAsc ? av - bv : bv - av;
+            }
+            return this.sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+          });
         }
       }
     }
