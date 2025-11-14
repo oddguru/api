@@ -10,12 +10,11 @@
     body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
     .card-hover { transition: all 0.4s ease; }
-    .card-hover:hover { 
-      transform: translateY(-8px); 
-      box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
-    }
+    .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
     .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(139, 92, 246, 0.2); }
     .skeleton { @apply bg-gray-800 animate-pulse rounded; }
+    .view-grid .card { @apply md:col-span-1; }
+    .view-list .card { @apply col-span-1 md:col-span-3 flex items-center space-x-6 p-6; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen gradient-bg">
@@ -29,11 +28,30 @@
           OddGuru PRO
         </h1>
       </div>
+
+      <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center space-x-6">
         <a href="#" class="text-purple-400 font-bold">Dashboard</a>
         <a href="#" class="text-gray-300 hover:text-white">Histórico</a>
         <a href="#" class="text-gray-300 hover:text-white">Perfil</a>
         <a href="/" class="text-gray-300 hover:text-white">Sair</a>
+      </div>
+
+      <!-- MOBILE HAMBURGER -->
+      <button @click="mobileMenu = !mobileMenu" class="md:hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- MOBILE MENU -->
+    <div x-show="mobileMenu" class="md:hidden border-t border-gray-800 bg-black/90" x-cloak>
+      <div class="px-4 py-3 space-y-2">
+        <a href="#" class="block text-purple-400 font-bold">Dashboard</a>
+        <a href="#" class="block text-gray-300">Histórico</a>
+        <a href="#" class="block text-gray-300">Perfil</a>
+        <a href="/" class="block text-gray-300">Sair</a>
       </div>
     </div>
   </nav>
@@ -46,17 +64,25 @@
           <h2 class="text-3xl font-bold">Value Bets do Dia</h2>
           <p class="text-gray-400" x-text="updateTime"></p>
         </div>
-        <div class="flex gap-3">
+        <div class="flex gap-3 flex-wrap">
           <button @click="filter = 'all'" 
                   :class="filter === 'all' ? 'bg-purple-600' : 'bg-gray-800'" 
                   class="px-5 py-2 rounded-lg font-medium text-sm transition">
             Todas
           </button>
+          <button @click="filter = 'Brasile...
+
           <button @click="filter = 'Brasileirão'" 
                   :class="filter === 'Brasileirão' ? 'bg-purple-600' : 'bg-gray-800'" 
                   class="px-5 py-2 rounded-lg font-medium text-sm transition">
             Brasileirão
           </button>
+          <div class="flex bg-gray-800 rounded-lg p-1">
+            <button @click="view = 'grid'" :class="view === 'grid' ? 'bg-purple-600' : 'bg-transparent'" 
+                    class="px-3 py-1 rounded text-xs transition">Grade</button>
+            <button @click="view = 'list'" :class="view === 'list' ? 'bg-purple-600' : 'bg-transparent'" 
+                    class="px-3 py-1 rounded text-xs transition">Lista</button>
+          </div>
         </div>
       </div>
     </div>
@@ -65,12 +91,12 @@
   <!-- CARDS -->
   <section class="px-4 pb-20">
     <div class="max-w-7xl mx-auto">
-      <div class="grid md:grid-cols-3 gap-6">
-        
-        <!-- LOADING: SEM :key, SEM x-for com número -->
-        <div x-show="loading" class="col-span-3">
-          <div class="grid md:grid-cols-3 gap-6">
-            <div class="blur-card rounded-xl p-6" x-repeat="9">
+      <div :class="view === 'grid' ? 'grid md:grid-cols-3 gap-6' : 'space-y-4'">
+
+        <!-- LOADING -->
+        <div x-show="loading" :class="view === 'grid' ? 'col-span-3' : ''">
+          <div :class="view === 'grid' ? 'grid md:grid-cols-3 gap-6' : 'space-y-4'">
+            <div x-repeat="9" class="blur-card rounded-xl p-6">
               <div class="h-6 skeleton mb-3"></div>
               <div class="h-4 skeleton w-24 mb-4"></div>
               <div class="h-5 skeleton mb-2"></div>
@@ -85,40 +111,39 @@
         </div>
 
         <!-- BETS -->
-        <template x-for="bet in filteredBets" x-key="bet.id">
-          <div class="blur-card rounded-xl p-6 card-hover">
-            <div class="flex justify-between items-start mb-3">
-              <div>
-                <h3 class="font-bold text-lg" x-text="bet.match"></h3>
-                <p class="text-xs text-gray-400" x-text="`${bet.league} • ${bet.time}`"></p>
+        <template x-for="bet in sortedBets" x-key="bet.id">
+          <div :class="view === 'grid' ? 'blur-card rounded-xl p-6 card-hover' : 'blur-card rounded-xl p-4 flex items-center space-x-4 card-hover'">
+            <div class="flex-1">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h3 class="font-bold text-lg" x-text="bet.match"></h3>
+                  <p class="text-xs text-gray-400" x-text="`${bet.league} • ${bet.time}`"></p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold" 
+                      x-text="`+${(bet.edge * 100).toFixed(0)}%`"></span>
               </div>
-              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold" 
-                    x-text="`+${(bet.edge * 100).toFixed(0)}%`"></span>
-            </div>
-
-            <p class="font-bold text-cyan-400 mt-2" x-text="bet.selection"></p>
-            <p class="text-sm text-gray-300" x-text="bet.market"></p>
-
-            <div class="mt-4 flex justify-between items-center">
-              <div>
-                <p class="text-xs text-gray-400" x-text="`Odd na ${bet.bookmaker}`"></p>
-                <p class="text-xl font-bold text-green-400" x-text="bet.odd"></p>
+              <p class="font-bold text-cyan-400 mt-1" x-text="bet.selection"></p>
+              <p class="text-sm text-gray-300" x-text="bet.market"></p>
+              <div class="mt-3 flex justify-between items-center">
+                <div>
+                  <p class="text-xs text-gray-400" x-text="`Odd na ${bet.bookmaker}`"></p>
+                  <p class="text-xl font-bold text-green-400" x-text="bet.odd"></p>
+                </div>
+                <a :href="bet.affiliate_link" target="_blank"
+                   class="bg-green-600 hover:bg-green-500 text-black font-bold px-5 py-2 rounded-lg text-sm transition">
+                   Apostar
+                </a>
               </div>
-              <a :href="bet.affiliate_link" target="_blank"
-                 class="bg-green-600 hover:bg-green-500 text-black font-bold px-5 py-2 rounded-lg text-sm transition">
-                 Apostar
-              </a>
-            </div>
-
-            <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
-              <p class="font-medium text-purple-400 mb-1">Por quê?</p>
-              <p x-text="bet.why"></p>
+              <div class="mt-3 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
+                <p class="font-medium text-purple-400 mb-1">Por quê?</p>
+                <p x-text="bet.why"></p>
+              </div>
             </div>
           </div>
         </template>
 
         <!-- EMPTY -->
-        <div x-show="!loading && filteredBets.length === 0" class="col-span-3 text-center py-16 text-gray-400">
+        <div x-show="!loading && sortedBets.length === 0" class="col-span-3 text-center py-16 text-gray-400">
           <p class="text-xl">Nenhuma aposta no momento.</p>
           <p class="text-sm mt-2">Volte às 8h para novas entradas!</p>
         </div>
@@ -130,7 +155,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
-    // x-repeat é um plugin simples do Alpine para repetir
     document.addEventListener('alpine:init', () => {
       Alpine.directive('repeat', (el, { expression }, { evaluateLater, effect }) => {
         let getTemplate = evaluateLater(expression)
@@ -156,6 +180,8 @@
         supabase: null,
         bets: [],
         filter: 'all',
+        view: 'grid',
+        mobileMenu: false,
         loading: true,
         updateTime: 'Carregando...',
 
@@ -169,9 +195,7 @@
             const res = await fetch('https://api-hqfm.onrender.com/env')
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const env = await res.json()
-            
-            // Aguarda o Supabase carregar
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await new Promise(r => setTimeout(r, 500))
             this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
             console.log('Supabase conectado!')
           } catch (err) {
@@ -183,7 +207,6 @@
 
         async fetchBets() {
           if (!this.supabase) return
-
           this.loading = true
           try {
             const { data, error } = await this.supabase
@@ -193,7 +216,6 @@
               .order('edge', { ascending: false })
 
             if (error) throw error
-
             this.bets = data || []
             this.updateTime = `Atualizado em: ${new Date().toLocaleString('pt-BR', {
               day: '2-digit', month: '2-digit', year: 'numeric',
@@ -209,8 +231,12 @@
         },
 
         get filteredBets() {
-          if (this.filter === 'all') return this.bets
-          return this.bets.filter(b => b.league === this.filter)
+          let filtered = this.filter === 'all' ? this.bets : this.bets.filter(b => b.league === this.filter)
+          return filtered
+        },
+
+        get sortedBets() {
+          return [...this.filteredBets].sort((a, b) => b.edge - a.edge)
         }
       }
     }
