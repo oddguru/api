@@ -138,7 +138,7 @@
 
         async loadEnv() {
           try {
-            const res = await fetch('/env')
+            const res = await fetch('https://api-hqfm.onrender.com/env')
             const env = await res.json()
             this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
           } catch (err) {
