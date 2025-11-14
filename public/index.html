@@ -3,15 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OddGuru PRO - Apostas com Vantagem</title>
+  <title>OddGuru PRO - Apostas com Vantagem Real</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
-    .card-hover { transition: all 0.3s; }
-    .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 30px rgba(139, 92, 246, 0.3); }
+    .card-hover { transition: all 0.4s ease; }
+    .card-hover:hover { 
+      transform: translateY(-12px) scale(1.02); 
+      box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4);
+    }
     .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.6); border: 1px solid rgba(139, 92, 246, 0.2); }
+    .glow-hover:hover { box-shadow: 0 0 30px rgba(168, 85, 247, 0.6); }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen gradient-bg">
@@ -41,13 +45,14 @@
   <!-- HERO -->
   <section class="py-20 px-4 text-center">
     <h1 class="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-      Apostas com Vantagem Real
+      Encontre +30% de Vantagem com IA
     </h1>
-    <p class="text-xl text-gray-300 mt-6 max-w-3xl mx-auto">
-      A IA encontra jogos onde a odd está errada. Você só aposta e lucra.
+    <p class="text-xl text-gray-300 mt-6 max-w-3xl mx-auto leading-relaxed">
+      A IA analisa <strong>H2H, forma, xG e mais</strong> para encontrar apostas onde a odd paga <strong>acima do justo</strong>.<br>
+      Você não precisa ser especialista. Só seguir o plano.
     </p>
 
-    <!-- 4 ÍCONES (100% BR) -->
+    <!-- ÍCONES -->
     <div class="mt-12 flex flex-wrap justify-center gap-8 text-sm">
       <div class="flex items-center space-x-2">
         <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs">7</div>
@@ -57,11 +62,11 @@
         <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z"/></svg>
         </div>
-        <span class="text-gray-300">Suporte por Telegram</span>
+        <span class="text-gray-300">Suporte no Telegram</span>
       </div>
       <div class="flex items-center space-x-2">
         <div class="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center text-xs">10+</div>
-        <span class="text-gray-300">Mercados Analisados</span>
+        <span class="text-gray-300">Mercados por Jogo</span>
       </div>
       <div class="flex items-center space-x-2">
         <div class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -76,23 +81,23 @@
       <a href="/login.html" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-8 rounded-xl text-lg transition inline-block">
         Teste Grátis 7 Dias
       </a>
-      <p class="text-sm text-gray-400 mt-3">Sem cartão • Cancele a qualquer hora</p>
+      <p class="text-sm text-gray-400 mt-3">Sem cartão • Cancele quando quiser</p>
     </div>
   </section>
 
   <!-- TEASER BETS -->
   <section class="py-16 px-4">
     <div class="max-w-7xl mx-auto">
-      <h2 class="text-3xl font-bold text-center mb-12">Exemplos do que você recebe</h2>
+      <h2 class="text-3xl font-bold text-center mb-12">Exemplo do que você recebe</h2>
       <div class="grid md:grid-cols-3 gap-6" x-data="liveBets()" x-init="fetchBets()">
         <template x-for="bet in bets" x-key="bet.id">
-          <div class="blur-card rounded-xl p-6 card-hover">
+          <div class="blur-card rounded-xl p-6 card-hover glow-hover">
             <div class="flex justify-between items-start mb-3">
               <div>
                 <h3 class="font-bold text-lg" x-text="bet.match"></h3>
                 <p class="text-xs text-gray-400" x-text="bet.time"></p>
               </div>
-              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400" x-text="`+${(bet.edge*100).toFixed(0)}%`"></span>
+              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold" x-text="`+${(bet.edge*100).toFixed(0)}%`"></span>
             </div>
 
             <p class="font-bold text-cyan-400 mt-2" x-text="bet.selection"></p>
@@ -104,7 +109,7 @@
                 <p class="text-xl font-bold text-green-400" x-text="bet.odd"></p>
               </div>
               <a :href="`https://betano.com/?tag=oddguru`" target="_blank"
-                 class="bg-green-600 hover:bg-green-500 text-black font-bold px-4 py-2 rounded-lg text-sm">
+                 class="bg-green-600 hover:bg-green-500 text-black font-bold px-4 py-2 rounded-lg text-sm transition">
                  Apostar
               </a>
             </div>
@@ -119,45 +124,47 @@
     </div>
   </section>
 
-  <!-- PLANOS (FREE, MENSAL, ANUAL) -->
+  <!-- PLANOS -->
   <section id="planos" class="py-16 px-4 bg-gray-900/30">
     <div class="max-w-5xl mx-auto">
       <h2 class="text-3xl font-bold text-center mb-12">Escolha seu plano</h2>
       <div class="grid md:grid-cols-3 gap-6">
 
         <!-- FREE -->
-        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center">
+        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center card-hover">
           <h3 class="text-xl font-bold">Grátis</h3>
           <p class="text-3xl font-bold mt-4">R$0</p>
           <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
-            <li>✓ 1 aposta por semana</li>
-            <li>✓ Sem análise completa</li>
-            <li>✓ Ideal pra testar</li>
+            <li>1 aposta por semana</li>
+            <li>Sem análise completa</li>
+            <li>Ideal pra testar</li>
           </ul>
           <a href="/login.html" class="block mt-8 bg-gray-700 py-3 rounded-lg font-bold hover:bg-gray-600 transition">Começar Grátis</a>
         </div>
 
         <!-- MENSAL -->
-        <div class="bg-gradient-to-br from-purple-600 to-pink-600 p-8 rounded-xl transform scale-105 text-white">
+        <div class="bg-gradient-to-br from-purple-600 to-pink-600 p-8 rounded-xl transform scale-105 text-white card-hover glow-hover">
           <h3 class="text-xl font-bold">PRO Mensal</h3>
           <p class="text-4xl font-bold mt-4">R$29,90<span class="text-lg">/mês</span></p>
           <ul class="mt-6 space-y-3 text-left text-sm">
-            <li>✓ Todas as apostas do dia</li>
-            <li>✓ Análise completa (H2H, forma, etc)</li>
-            <li>✓ Telegram com alertas</li>
-            <li>✓ 7 dias grátis</li>
+            <li>Todas as apostas do dia</li>
+            <li>Análise completa (H2H, forma, etc)</li>
+            <li>Telegram com alertas</li>
+            <li>7 dias grátis</li>
           </ul>
-          <a href="/login.html" class="block mt-8 bg-white text-purple-600 py-3 rounded-lg font-bold hover:bg-gray-100 transition">Teste Grátis</a>
+          <a href="/login.html" class="block mt-8 bg-white text-purple-600 py-3 rounded-lg font-bold hover:bg-gray-100 transition">Assinar Mensal</a>
         </div>
 
         <!-- ANUAL -->
-        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center">
+        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center card-hover">
           <h3 class="text-xl font-bold">PRO Anual</h3>
-          <p class="text-3xl font-bold mt-4">R$239<span class="text-lg text-green-400"> (-33%)</span></p>
+          <p class="text-3xl font-bold mt-4">R$239</p>
+          <p class="text-sm text-green-400 font-bold">ou 12x de R$19,90 sem juros</p>
+          <p class="text-lg text-green-400 font-bold mt-1">(-33%)</p>
           <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
-            <li>✓ Tudo do Mensal</li>
-            <li>✓ 2 meses grátis</li>
-            <li>✓ Suporte prioritário</li>
+            <li>Tudo do Mensal</li>
+            <li>2 meses grátis</li>
+            <li>Suporte prioritário</li>
           </ul>
           <a href="/login.html" class="block mt-8 bg-purple-600 py-3 rounded-lg font-bold hover:bg-purple-700 transition">Assinar Anual</a>
         </div>
@@ -170,14 +177,75 @@
     <div class="max-w-4xl mx-auto">
       <h2 class="text-3xl font-bold text-center mb-12">Dúvidas Comuns</h2>
       <div class="space-y-6">
+
         <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
           <summary class="font-bold text-lg flex justify-between items-center">
-            O que é "vantagem"?
+            Como o OddGuru funciona?
             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
           </summary>
-          <p class="mt-4 text-gray-300">É quando a casa de aposta paga mais do que deveria. Ex: odd 2.10 com 55% de chance = R$10 de lucro a cada R$100.</p>
+          <p class="mt-4 text-gray-300">
+            As casas oferecem milhares de odds. Algumas estão <strong>acima do valor real</strong> (ex: odd 2.10 com 55% de chance = +10% de vantagem).<br>
+            A IA encontra essas apostas e te entrega só as com <strong>maior edge</strong>.
+          </p>
         </details>
-        <!-- +2 perguntas -->
+
+        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
+          <summary class="font-bold text-lg flex justify-between items-center">
+            Preciso de quantas casas de apostas?
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-4 text-gray-300">
+            Quanto mais, melhor. Cada casa erra em momentos diferentes.<br>
+            Ter <strong>Betano, Bet365, Pixbet</strong> aumenta suas chances e te dá <strong>bônus de cadastro</strong>.
+          </p>
+        </details>
+
+        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
+          <summary class="font-bold text-lg flex justify-between items-center">
+            Quanto tempo por dia?
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-4 text-gray-300">
+            <strong>10–15 minutos</strong> já bastam pra lucrar.<br>
+            Mas quem olha mais (manhã, tarde, noite) pega mais oportunidades.<br>
+            O PRO manda <strong>alerta no Telegram</strong> — você só clica.
+          </p>
+        </details>
+
+        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
+          <summary class="font-bold text-lg flex justify-between items-center">
+            Vou ganhar todo dia?
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-4 text-gray-300">
+            <strong>Não.</strong> Ninguém ganha todo dia — nem profissionais.<br>
+            O OddGuru te dá <strong>vantagem estatística</strong>, mas <strong>perdas fazem parte</strong>.<br>
+            No longo prazo, quem segue o plano <strong>lucra</strong>.
+          </p>
+        </details>
+
+        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
+          <summary class="font-bold text-lg flex justify-between items-center">
+            É golpe?
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-4 text-gray-300">
+            Não acredite em promessa. Veja os <strong>resultados reais</strong> no Telegram.<br>
+            Clientes desde o dia 1. E você pode <strong>testar 7 dias grátis</strong> — sem cartão.
+          </p>
+        </details>
+
+        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
+          <summary class="font-bold text-lg flex justify-between items-center">
+            Posso cancelar?
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-4 text-gray-300">
+            Sim. Cancele <strong>a qualquer hora</strong> no painel ou por email.<br>
+            Sem multa. Sem estresse.
+          </p>
+        </details>
+
       </div>
     </div>
   </section>
@@ -198,10 +266,10 @@
 
   <!-- FOOTER -->
   <footer class="py-8 px-4 border-t border-gray-800 text-center text-xs text-gray-400">
-    <p>© 2025 OddGuru • R$29,90/mês • Apostas responsáveis • 18+</p>
+    <p>© 2025 OddGuru • R$29,90/mês • 12x sem juros • Apostas responsáveis • 18+</p>
   </footer>
 
-  <!-- ALPINE -->
+  <!-- ALPINE JS -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
     function liveBets() {
