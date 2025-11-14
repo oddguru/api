@@ -67,10 +67,10 @@
     <div class="max-w-7xl mx-auto">
       <div class="grid md:grid-cols-3 gap-6">
         
-        <!-- LOADING (SEM x-for, SEM KEY) -->
-        <div x-show="loading" class="col-span-3 space-y-6">
+        <!-- LOADING: SEM :key, SEM x-for com número -->
+        <div x-show="loading" class="col-span-3">
           <div class="grid md:grid-cols-3 gap-6">
-            <div x-for="i in 9" class="blur-card rounded-xl p-6">
+            <div class="blur-card rounded-xl p-6" x-repeat="9">
               <div class="h-6 skeleton mb-3"></div>
               <div class="h-4 skeleton w-24 mb-4"></div>
               <div class="h-5 skeleton mb-2"></div>
@@ -126,10 +126,31 @@
     </div>
   </section>
 
-  <!-- SUPABASE + ALPINE -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
+    // x-repeat é um plugin simples do Alpine para repetir
+    document.addEventListener('alpine:init', () => {
+      Alpine.directive('repeat', (el, { expression }, { evaluateLater, effect }) => {
+        let getTemplate = evaluateLater(expression)
+        effect(() => {
+          getTemplate(times => {
+            el._x_repeat = times
+            Alpine.mutateDom(() => {
+              while (el.firstChild) el.removeChild(el.firstChild)
+              for (let i = 0; i < times; i++) {
+                let clone = el.cloneNode(true)
+                clone.removeAttribute('x-repeat')
+                el.parentNode.insertBefore(clone, el)
+              }
+              el.remove()
+            })
+          })
+        })
+      })
+    })
+
     function dashboard() {
       return {
         supabase: null,
@@ -139,29 +160,29 @@
         updateTime: 'Carregando...',
 
         async init() {
-          await this.loadEnv()
+          await this.loadSupabase()
           await this.fetchBets()
         },
 
-        async loadEnv() {
+        async loadSupabase() {
           try {
             const res = await fetch('https://api-hqfm.onrender.com/env')
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const env = await res.json()
-            // ESPERA O SUPABASE CARREGAR
+            
+            // Aguarda o Supabase carregar
+            await new Promise(resolve => setTimeout(resolve, 500))
             this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
             console.log('Supabase conectado!')
           } catch (err) {
             console.error('Erro ao carregar env:', err)
             this.updateTime = 'Erro de conexão.'
+            this.loading = false
           }
         },
 
         async fetchBets() {
-          if (!this.supabase) {
-            this.loading = false
-            return
-          }
+          if (!this.supabase) return
 
           this.loading = true
           try {
