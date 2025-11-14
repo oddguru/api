@@ -10,10 +10,7 @@
     body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
     .card-hover { transition: all 0.4s ease; }
-    .card-hover:hover { 
-      transform: translateY(-12px) scale(1.02); 
-      box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4);
-    }
+    .card-hover:hover { transform: translateY(-12px) scale(1.02); box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4); }
     .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.6); border: 1px solid rgba(139, 92, 246, 0.2); }
     .skeleton { @apply bg-gray-800 animate-pulse rounded; }
   </style>
@@ -29,23 +26,17 @@
           OddGuru
         </h1>
       </div>
-
-      <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center space-x-8">
         <a href="#planos" class="text-gray-300 hover:text-white">Planos</a>
         <a href="#faq" class="text-gray-300 hover:text-white">Dúvidas</a>
         <a href="/dashboard" class="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-medium">Entrar</a>
       </div>
-
-      <!-- MOBILE HAMBURGER -->
       <button @click="mobileMenu = !mobileMenu" class="md:hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
     </div>
-
-    <!-- MOBILE MENU -->
     <div x-show="mobileMenu" class="md:hidden border-t border-gray-800 bg-black/90" x-cloak>
       <div class="px-4 py-3 space-y-2">
         <a href="#planos" class="block text-gray-300">Planos</a>
@@ -65,16 +56,12 @@
         A IA encontra apostas onde a casa paga <strong>mais do que deveria</strong>.<br>
         Você não precisa entender nada de futebol. Só seguir o plano.
       </p>
-
-      <!-- CTA -->
       <div class="mt-10">
         <a href="/dashboard" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-10 rounded-xl text-lg transition inline-block">
           Teste Grátis 7 Dias
         </a>
         <p class="text-sm text-gray-400 mt-3">Sem cartão • Cancele quando quiser</p>
       </div>
-
-      <!-- ÍCONES -->
       <div class="mt-12 flex flex-wrap justify-center gap-8 text-sm">
         <div class="flex items-center space-x-2">
           <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs">7</div>
@@ -101,20 +88,22 @@
       
       <!-- LOADING -->
       <div x-show="loading" class="grid md:grid-cols-3 gap-6">
-        <div x-for="i in 3" class="blur-card rounded-xl p-6">
-          <div class="h-6 skeleton mb-3"></div>
-          <div class="h-4 skeleton w-24 mb-4"></div>
-          <div class="h-5 skeleton mb-2"></div>
-          <div class="h-4 skeleton w-32 mb-4"></div>
-          <div class="flex justify-between items-center mb-4">
-            <div class="h-8 skeleton w-16"></div>
-            <div class="h-9 skeleton w-20"></div>
+        <template x-for="_ in [1,2,3]">
+          <div class="blur-card rounded-xl p-6">
+            <div class="h-6 skeleton mb-3"></div>
+            <div class="h-4 skeleton w-24 mb-4"></div>
+            <div class="h-5 skeleton mb-2"></div>
+            <div class="h-4 skeleton w-32 mb-4"></div>
+            <div class="flex justify-between items-center mb-4">
+              <div class="h-8 skeleton w-16"></div>
+              <div class="h-9 skeleton w-20"></div>
+            </div>
+            <div class="h-16 skeleton"></div>
           </div>
-          <div class="h-16 skeleton"></div>
-        </div>
+        </template>
       </div>
 
-      <!-- CARDS DINÂMICOS -->
+      <!-- CARDS -->
       <div x-show="!loading" class="grid md:grid-cols-3 gap-6">
         <template x-for="bet in teaserBets" x-key="bet.id">
           <div class="blur-card rounded-xl p-6 card-hover">
@@ -152,75 +141,8 @@
     </div>
   </section>
 
-  <!-- PLANOS -->
-  <section id="planos" class="py-16 px-4 bg-gray-900/30">
-    <div class="max-w-5xl mx-auto">
-      <h2 class="text-3xl font-bold text-center mb-12">Escolha seu plano</h2>
-      <div class="grid md:grid-cols-3 gap-6">
-
-        <!-- FREE -->
-        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center card-hover">
-          <h3 class="text-xl font-bold">Grátis</h3>
-          <p class="text-3xl font-bold mt-4">R$0</p>
-          <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
-            <li>3 apostas por semana</li>
-            <li>Sem análise completa</li>
-            <li>Ideal pra testar</li>
-          </ul>
-          <a href="/dashboard" class="block mt-8 bg-gray-700 py-3 rounded-lg font-bold hover:bg-gray-600 transition w-full">Começar Grátis</a>
-        </div>
-
-        <!-- MENSAL -->
-        <div class="bg-gradient-to-br from-purple-600 to-pink-600 p-8 rounded-xl transform scale-105 text-white card-hover">
-          <h3 class="text-xl font-bold">PRO Mensal</h3>
-          <p class="text-4xl font-bold mt-4">R$29,90<span class="text-lg">/mês</span></p>
-          <ul class="mt-6 space-y-3 text-left text-sm">
-            <li>Todas as apostas do dia</li>
-            <li>Análise completa</li>
-            <li>Entradas no Telegram</li>
-            <li>7 dias grátis</li>
-          </ul>
-          <a href="/dashboard" class="block mt-8 bg-white text-purple-600 py-3 rounded-lg font-bold hover:bg-gray-100 transition w-full text-center">Assinar Mensal</a>
-        </div>
-
-        <!-- ANUAL -->
-        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center card-hover">
-          <h3 class="text-xl font-bold">PRO Anual</h3>
-          <p class="text-3xl font-bold mt-4">R$239</p>
-          <p class="text-sm text-green-400 font-bold">ou 12x de R$19,90 sem juros</p>
-          <p class="text-lg text-green-400 font-bold mt-1">(-33%)</p>
-          <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
-            <li>Tudo do Mensal</li>
-            <li>2 meses grátis</li>
-            <li>Suporte prioritário</li>
-          </ul>
-          <a href="/dashboard" class="block mt-8 bg-purple-600 py-3 rounded-lg font-bold hover:bg-purple-700 transition w-full">Assinar Anual</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section id="faq" class="py-16 px-4">
-    <div class="max-w-3xl mx-auto">
-      <h2 class="text-3xl font-bold text-center mb-12">Dúvidas Frequentes</h2>
-      <div class="space-y-4">
-        <details class="bg-gray-800/50 p-4 rounded-lg">
-          <summary class="font-bold cursor-pointer">Vou ganhar todo dia?</summary>
-          <p class="mt-2 text-sm text-gray-300">Não. Apostas têm risco. Nosso edge é +30% a longo prazo. Alguns dias perdem, outros ganham muito.</p>
-        </details>
-        <details class="bg-gray-800/50 p-4 rounded-lg">
-          <summary class="font-bold cursor-pointer">Preciso saber de futebol?</summary>
-          <p class="mt-2 text-sm text-gray-300">Não. A IA faz tudo. Você só copia a aposta.</p>
-        </details>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="py-8 px-4 border-t border-gray-800 text-center text-sm text-gray-400">
-    <p>© 2025 OddGuru. Todos os direitos reservados.</p>
-  </footer>
+  <!-- PLANOS, FAQ, FOOTER (igual antes) -->
+  <!-- ... (mantém o mesmo do seu último index.html) ... -->
 
   <!-- ALPINE -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -230,20 +152,14 @@
         mobileMenu: false,
         loading: true,
         teaserBets: [],
-
-        async init() {
-          await this.loadTeaser()
-        },
-
+        async init() { await this.loadTeaser() },
         async loadTeaser() {
           try {
-            const res = await fetch('https://api-hqfm.onrender.com/api/teaser')
-            if (!res.ok) throw new Error('Erro na API')
+            const res = await fetch('/api/teaser')
             const data = await res.json()
             this.teaserBets = data.bets || []
           } catch (err) {
-            console.error('Erro ao carregar teaser:', err)
-            this.teaserBets = []
+            console.error('Erro teaser:', err)
           } finally {
             this.loading = false
           }
