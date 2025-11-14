@@ -1,5 +1,4 @@
 import os
-import requests
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
@@ -22,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === VARIÁVEIS DO .env (Render) ===
+# === VARIÁVEIS DO AMBIENTE (RENDER) ===
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -52,13 +51,11 @@ async def get_env():
 @app.get("/api/teaser")
 async def get_teaser_bets():
     try:
-        # Usa /env para pegar as chaves (funciona mesmo sem os.getenv)
-        env_res = requests.get("https://api-hqfm.onrender.com/env")
-        if env_res.status_code != 200:
-            return {"bets": [], "error": "env not found"}
-        env = env_res.json()
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print("ERRO: SUPABASE_URL ou SUPABASE_KEY não configurados")
+            return {"bets": [], "error": "Supabase não configurado"}
 
-        supabase = create_client(env["SUPABASE_URL"], env["SUPABASE_KEY"])
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         response = supabase.table('value_bets')\
             .select('*')\
             .eq('active', True)\
@@ -66,15 +63,17 @@ async def get_teaser_bets():
             .limit(3)\
             .execute()
         
+        print(f"Teaser: {len(response.data)} apostas encontradas")
         return {"bets": response.data}
     except Exception as e:
-        print("Erro /api/teaser:", e)
+        print("Erro /api/teaser:", str(e))
         return {"bets": [], "error": str(e)}
 
 # === ROTA: /api/telegram (RECEBE DO SUPABASE TRIGGER) ===
 @app.post("/api/telegram")
 async def send_to_telegram(request: Request):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("ERRO: Telegram não configurado (TOKEN ou CHAT_ID ausente)")
         return {"status": "error", "msg": "Telegram não configurado"}
 
     try:
@@ -106,14 +105,16 @@ async def send_to_telegram(request: Request):
         }
 
         async with httpx.AsyncClient() as client:
-            await client.post(url, json=payload)
+            response = await client.post(url, json=payload)
+            if response.status_code != 200:
+                print("Erro Telegram API:", response.text)
 
         return {"status": "sent"}
     except Exception as e:
-        print("Erro Telegram:", e)
+        print("Erro no envio Telegram:", str(e))
         return {"status": "error", "msg": str(e)}
 
-# === ROTA: /health (opcional) ===
+# === ROTA: /health (OPCIONAL) ===
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "service": "OddGuru PRO API"}
