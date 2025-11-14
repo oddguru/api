@@ -6,6 +6,7 @@
   <title>OddGuru PRO - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- SUPABASE JS (OBRIGATÓRIO) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
@@ -16,7 +17,7 @@
       box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
     }
     .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(139, 92, 246, 0.2); }
-    .skeleton { @apply bg-gray-800 animate-pulse; }
+    .skeleton { @apply bg-gray-800 animate-pulse rounded; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen gradient-bg">
@@ -68,18 +69,18 @@
     <div class="max-w-7xl mx-auto">
       <div class="grid md:grid-cols-3 gap-6">
         
-        <!-- LOADING -->
+        <!-- LOADING (CORRIGIDO: x-for com Array) -->
         <template x-if="loading">
-          <div x-for="i in 9" class="blur-card rounded-xl p-6">
-            <div class="h-6 skeleton rounded mb-3"></div>
-            <div class="h-4 skeleton rounded w-24 mb-4"></div>
-            <div class="h-5 skeleton rounded mb-2"></div>
-            <div class="h-4 skeleton rounded w-32 mb-4"></div>
+          <div x-for="i in Array(9)" :key="i" class="blur-card rounded-xl p-6">
+            <div class="h-6 skeleton mb-3"></div>
+            <div class="h-4 skeleton w-24 mb-4"></div>
+            <div class="h-5 skeleton mb-2"></div>
+            <div class="h-4 skeleton w-32 mb-4"></div>
             <div class="flex justify-between items-center mb-4">
-              <div class="h-8 skeleton rounded w-16"></div>
-              <div class="h-9 skeleton rounded w-20"></div>
+              <div class="h-8 skeleton w-16"></div>
+              <div class="h-9 skeleton w-20"></div>
             </div>
-            <div class="h-16 skeleton rounded"></div>
+            <div class="h-16 skeleton"></div>
           </div>
         </template>
 
@@ -125,64 +126,63 @@
     </div>
   </section>
 
-  <!-- ALPINE + SUPABASE -->
+  <!-- ALPINE + SCRIPT -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
-  function dashboard() {
-    return {
-      supabase: null,
-      bets: [],
-      filter: 'all',
-      loading: true,
-      updateTime: 'Carregando...',
+    function dashboard() {
+      return {
+        supabase: null,
+        bets: [],
+        filter: 'all',
+        loading: true,
+        updateTime: 'Carregando...',
 
-      async loadEnv() {
-        try {
-          // URL ABSOLUTA DO RENDER
-          const res = await fetch('https://api-hqfm.onrender.com/env')
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const env = await res.json()
-          this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
-          console.log('Supabase conectado!')
-        } catch (err) {
-          console.error('Erro ao carregar env:', err)
-          this.updateTime = 'Erro de conexão. Verifique a URL.'
+        async loadEnv() {
+          try {
+            const res = await fetch('https://api-hqfm.onrender.com/env')
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const env = await res.json()
+            this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
+            console.log('Supabase conectado!')
+          } catch (err) {
+            console.error('Erro ao carregar env:', err)
+            this.updateTime = 'Erro de conexão.'
+          }
+        },
+
+        async fetchBets() {
+          if (!this.supabase) return
+
+          this.loading = true
+          try {
+            const { data, error } = await this.supabase
+              .from('value_bets')
+              .select('*')
+              .eq('active', true)
+              .order('edge', { ascending: false })
+
+            if (error) throw error
+
+            this.bets = data || []
+            this.updateTime = `Atualizado em: ${new Date().toLocaleString('pt-BR', {
+              day: '2-digit', month: '2-digit', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            })}`
+          } catch (err) {
+            console.error('Erro Supabase:', err)
+            this.bets = []
+            this.updateTime = 'Erro ao carregar apostas.'
+          } finally {
+            this.loading = false
+          }
+        },
+
+        get filteredBets() {
+          if (this.filter === 'all') return this.bets
+          return this.bets.filter(b => b.league === this.filter)
         }
-      },
-
-      async fetchBets() {
-        if (!this.supabase) return
-
-        this.loading = true
-        try {
-          const { data, error } = await this.supabase
-            .from('value_bets')
-            .select('*')
-            .eq('active', true)
-            .order('edge', { ascending: false })
-
-          if (error) throw error
-
-          this.bets = data || []
-          this.updateTime = `Atualizado em: ${new Date().toLocaleString('pt-BR', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-          })}`
-        } catch (err) {
-          console.error('Erro Supabase:', err)
-          this.bets = []
-          this.updateTime = 'Erro ao carregar apostas.'
-        } finally {
-          this.loading = false
-        }
-      },
-
-      get filteredBets() {
-        if (this.filter === 'all') return this.bets
-        return this.bets.filter(b => b.league === this.filter)
       }
     }
-  }
-</script>
+  </script>
 </body>
 </html>
