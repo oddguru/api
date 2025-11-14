@@ -1,96 +1,130 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="scroll-smooth">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OddGURU PRO</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OddGuru PRO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body{font-family:'Segoe UI',Arial,sans-serif;background:#0f0f1e;color:#0f0;margin:0;padding:20px;background:linear-gradient(135deg,#0f0f1e,#1a1a2e);}
-    .title{font-size:3em;color:#00ff88;text-shadow:0 0 20px #00ff88;text-align:center;margin:20px 0;}
-    .subtitle{color:#0ff;text-align:center;font-size:1.3em;margin-bottom:30px;}
-    .history-btn{background:#00ff88;color:#000;padding:15px 30px;border-radius:15px;font-weight:bold;text-decoration:none;display:inline-block;margin:20px;box-shadow:0 0 20px #00ff88;}
-    .history-btn:hover{background:#00cc66;}
-    .value-bet{background:rgba(0,255,136,0.15);border:2px solid #00ff88;border-radius:15px;padding:20px;margin:20px auto;max-width:600px;box-shadow:0 0 20px rgba(0,255,136,0.3);}
-    .match{font-size:1.6em;color:#0ff;font-weight:bold;margin-bottom:8px;}
-    .mercado{font-size:1.1em;color:#ff0;margin:10px 0;}
-    .odd-edge{font-size:1.5em;margin:15px 0;}
-    .edge-positive{color:#0f0;font-weight:bold;}
-    .why{background:rgba(0,255,0,0.1);border-left:4px solid #0f0;padding:15px;margin:15px 0;text-align:left;color:#ccc;}
-    .suggestion{color:#00ff88;font-size:1.6em;font-weight:bold;margin-top:20px;}
-    .no-bets{color:#aaa;font-size:1.4em;margin:50px;text-align:center;}
-    .footer{margin-top:50px;color:#666;font-size:0.9em;text-align:center;}
-    .icon {font-size:1.4em;margin-right:8px;vertical-align:middle;}
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+    .card-hover { transition: all 0.3s; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
   </style>
 </head>
-<body>
-  <h1 class="title">OddGURU PRO</h1>
-  <p class="subtitle">Value Bets com fundamento • Todos os mercados • Atualizado em tempo real</p>
-  <div style="text-align:center;">
-    <a href="/history.html" class="history-btn">VER HISTÓRICO + ROI AO VIVO</a>
+<body class="bg-gray-900 text-white min-h-screen gradient-bg" x-data="oddGuru()" x-init="fetchBets()">
+
+  <!-- HEADER -->
+  <header class="border-b border-gray-800 backdrop-blur-sm bg-black/50 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          OddGuru PRO
+        </h1>
+      </div>
+      <div class="flex items-center space-x-6 text-sm">
+        <span x-text="`ROI: ${stats.roi}`" class="font-semibold text-green-400"></span>
+        <span x-text="`Lucro: R$${stats.profit}`" class="font-semibold text-green-400"></span>
+        <span x-text="`${stats.wins}/${stats.total} (${stats.winRate}%)`" class="font-medium"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- FILTROS -->
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="flex flex-wrap gap-3">
+      <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-purple-600' : 'bg-gray-700'" 
+              class="px-4 py-2 rounded-lg font-medium transition">Todos</button>
+      <button @click="filter = '1X2'" :class="filter === '1X2' ? 'bg-purple-600' : 'bg-gray-700'" 
+              class="px-4 py-2 rounded-lg font-medium transition">1X2</button>
+      <button @click="filter = 'gols'" :class="filter === 'gols' ? 'bg-purple-600' : 'bg-gray-700'" 
+              class="px-4 py-2 rounded-lg font-medium transition">Gols</button>
+      <button @click="filter = 'cartoes'" :class="filter === 'cartoes' ? 'bg-purple-600' : 'bg-gray-700'" 
+              class="px-4 py-2 rounded-lg font-medium transition">Cartões</button>
+    </div>
   </div>
 
-  <div id="bets">Carregando value bets...</div>
+  <!-- BETS ATIVAS -->
+  <div class="max-w-7xl mx-auto px-4 pb-12">
+    <h2 class="text-xl font-bold mb-6 flex items-center">
+      <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+      Value Bets Ativas
+    </h2>
 
-  <div class="footer">© 2025 OddGURU • Todos os direitos reservados</div>
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <template x-for="bet in filteredBets()" x-key="bet.id">
+        <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 card-hover border border-gray-700">
+          <div class="flex justify-between items-start mb-3">
+            <h3 class="font-bold text-lg" x-text="bet.match"></h3>
+            <span class="text-xs px-2 py-1 rounded-full"
+                  :class="bet.result === 'win' ? 'bg-green-600' : bet.result === 'loss' ? 'bg-red-600' : 'bg-yellow-600'"
+                  x-text="bet.result ? (bet.result === 'win' ? 'WIN' : 'LOSS') : 'Pendente'"></span>
+          </div>
 
+          <div class="space-y-2 text-sm">
+            <p><span class="text-gray-400">Mercado:</span> <span x-text="bet.market"></span></p>
+            <p><span class="text-gray-400">Seleção:</span> <strong x-text="bet.selection"></strong></p>
+            <p><span class="text-gray-400">Odd:</span> <span class="text-green-400 font-bold" x-text="bet.odd"></span></p>
+            <p><span class="text-gray-400">Edge:</span> <span class="text-purple-400" x-text="`+${(bet.edge * 100).toFixed(1)}%`"></span></p>
+          </div>
+
+          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
+            <p class="font-medium text-purple-400 mb-1">Por que apostar?</p>
+            <p x-text="bet.why"></p>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div x-show="filteredBets().length === 0" class="text-center py-12 text-gray-400">
+      Nenhuma value bet ativa no momento.
+    </div>
+  </div>
+
+  <!-- SCRIPT -->
   <script>
-    async function loadBets() {
-      try {
-        const res = await fetch('/api/active-bets');
-        const data = await res.json();
-        const el = document.getElementById('bets');
-        el.innerHTML = '';
+    function oddGuru() {
+      return {
+        bets: [],
+        stats: { roi: '0.0%', profit: '0.00', wins: 0, total: 0, winRate: '0.0' },
+        filter: 'all',
 
-        if (!data.active_bets || data.active_bets.length === 0) {
-          el.innerHTML = '<p class="no-bets">Nenhuma value bet ativa no momento.<br>Aguarde as próximas rodadas!</p>';
-          return;
+        async fetchBets() {
+          try {
+            const [active, history] = await Promise.all([
+              fetch('/api/active-bets').then(r => r.json()),
+              fetch('/api/history').then(r => r.json())
+            ]);
+
+            this.bets = [
+              ...active.active_bets.map(b => ({ ...b, result: null })),
+              ...history.history.map(b => ({ ...b, result: b.result }))
+            ];
+
+            this.stats = {
+              roi: history.roi,
+              profit: history.profit,
+              wins: history.wins,
+              total: history.total_bets,
+              winRate: history.total_bets > 0 ? ((history.wins / history.total_bets) * 100).toFixed(1) : '0.0'
+            };
+          } catch (e) {
+            console.error(e);
+          }
+        },
+
+        filteredBets() {
+          let filtered = this.bets.filter(b => !b.result); // Só ativas
+          if (this.filter !== 'all') {
+            filtered = filtered.filter(b => b.market === this.filter);
+          }
+          return filtered.sort((a, b) => new Date(b.bet_date) - new Date(a.bet_date));
         }
-
-        const mercadoLabel = {
-          "1X2": "VITÓRIA DO TIME DA CASA",
-          "cartoes": "TOTAL DE CARTÕES",
-          "escanteios": "TOTAL DE ESCANTEIOS",
-          "gols": "TOTAL DE GOLS",
-          "btts": "AMBAS AS EQUIPES MARCAM",
-          "over1.5": "MAIS DE 1.5 GOLS"
-        };
-
-        data.active_bets.forEach(b => {
-          const isCasa = (b.market === "1X2" && b.selection === b.home_team);
-          const mercadoTexto = (b.market === "1X2" && isCasa) ? "VITÓRIA DO TIME DA CASA" : mercadoLabel[b.market] || b.market.toUpperCase();
-
-          // EMOJIS REAIS COM &#xCODE; — FUNCIONA EM QUALQUER LUGAR!
-          let icone = "Money Bag";
-          if (b.market === "1X2") icone = "&#x1F3C6;";
-          if (b.market === "cartoes") icone = "&#x1F7E8;";
-          if (b.market === "escanteios") icone = "&#x1F6A9;";
-          if (b.market === "btts") icone = "&#x1F91D;";
-          if (b.market === "gols" || b.market === "over1.5") icone = "&#x26BD;";
-
-          el.innerHTML += `
-            <div class="value-bet">
-              <div class="match"><span class="icon">${icone}</span><strong>${b.match}</strong></div>
-              <div class="mercado">
-                <strong>${mercadoTexto}</strong><br>
-                <span style="color:#0ff;font-size:1.3em;font-weight:bold;">${b.selection}</span>
-              </div>
-              <div class="odd-edge">
-                Odd: <strong>${b.odd}</strong> | Edge: <span class="edge-positive">+${(b.edge*100).toFixed(1)}%</span>
-              </div>
-              <div class="why">
-                <strong>POR QUÊ ESSA É VALUE BET?</strong><br>
-                ${b.why || "Análise completa do modelo OddGURU"}
-              </div>
-              <div class="suggestion">APOSTE AGORA!</div>
-            </div>`;
-        });
-      } catch (err) {
-        el.innerHTML = '<p style="color:red">Erro ao carregar apostas</p>';
       }
     }
-
-    loadBets();
-    setInterval(loadBets, 30000);
   </script>
 </body>
 </html>
