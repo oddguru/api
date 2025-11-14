@@ -7,12 +7,13 @@ import datetime
 import requests
 import os
 import logging
+from typing import List, Dict
 
 # === LOGGING ===
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="OddGuru PRO v9.0 - Seguro + API Real 2022")
+app = FastAPI(title="OddGuru PRO v11.0 - 2025 + IA")
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,7 +54,6 @@ def add_bet(bet: BetIn):
     supabase.table("bets").delete()\
         .eq("match", bet.match)\
         .eq("market", bet.market)\
-        .eq("selection", bet.selection)\
         .execute()
     supabase.table("bets").insert(data).execute()
     return {"status": "ok"}
@@ -63,7 +63,6 @@ def record_result(res: BetResult):
     supabase.table("bets").update({"result": res.result})\
         .eq("match", res.match)\
         .eq("market", res.market)\
-        .eq("selection", res.selection)\
         .execute()
     return {"status": "ok"}
 
@@ -73,7 +72,6 @@ def active_bets():
         .select("*")\
         .is_("result", "null")\
         .order("bet_date", desc=True)\
-        .limit(20)\
         .execute()
     return {"active_bets": data.data}
 
@@ -97,122 +95,127 @@ def history():
         "history": bets[:50]
     }
 
-# === TESTE: STATS REAIS DO FLAMENGO 2022 (ID 121) ===
-@app.get("/api/test-flamengo-stats")
-def test_flamengo_stats():
-    api_key = os.getenv("API_SPORTS_KEY")
-    if not api_key:
-        return {"error": "API key não configurada no Render (vá em Environment)"}
-    
-    headers = {
-        "x-apisports-key": api_key,
-        "x-rapidapi-host": "v3.football.api-sports.io"
-    }
-    url = "https://v3.football.api-sports.io/teams/statistics"
-    params = {
-        "team": 121,      # FLAMENGO ID CORRETO
-        "league": 71,     # SÉRIE A
-        "season": 2022    # 100% FUNCIONA NO FREE TIER
-    }
-    
-    try:
-        resp = requests.get(url, headers=headers, params=params, timeout=15)
-        if resp.status_code != 200:
-            return {"error": f"API erro {resp.status_code}", "details": resp.text}
-        
-        data = resp.json().get("response", {})
-        if not data:
-            return {"error": "sem dados (free tier limit? Teste season=2022)"}
-        
-        stats = data.get("statistics", [{}])[0]
-        team = data.get("team", {})
-        
-        return {
-            "status": "sucesso",
-            "time": team.get("name"),
-            "jogos": stats.get("fixtures", {}).get("played", {}).get("total"),
-            "vitorias": stats.get("fixtures", {}).get("wins", {}).get("total"),
-            "gols_marcados": stats.get("goals", {}).get("for", {}).get("total", {}).get("total"),
-            "gols_sofridos": stats.get("goals", {}).get("against", {}).get("total", {}).get("total"),
-            "cartoes_amarelos": stats.get("cards", {}).get("yellow", {}).get("total"),
-            "clean_sheets": stats.get("clean_sheet", {}).get("total"),
-            "fonte": "API-Sports v3 - Dados REAIS 2022"
-        }
-    except Exception as e:
-        return {"error": "falha na requisição", "details": str(e)}
+# === API-SPORTS v3 (PRO) ===
+API_KEY = os.getenv("API_SPORTS_KEY")
+HEADERS = {
+    "x-apisports-key": API_KEY,
+    "x-rapidapi-host": "v3.football.api-sports.io"
+}
+BASE_URL = "https://v3.football.api-sports.io"
 
-# === UPDATE: VALUE BETS REAIS DO FLAMENGO (2022) ===
-@app.get("/api/update-flamengo")
-def update_flamengo():
-    stats_resp = test_flamengo_stats()
-    if "error" in stats_resp:
-        # Fallback com dados reais (caso API falhe)
-        stats = {
-            "jogos": 38,
-            "vitorias": 21,
-            "gols_marcados": 65,
-            "gols_sofridos": 40,
-            "cartoes_amarelos": 85
+# === BUSCAR JOGOS DO DIA (BRASILEIRÃO) ===
+def get_today_fixtures() -> List[Dict]:
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    url = f"{BASE_URL}/fixtures"
+    params = {"league": 71, "season": 2025, "date": today}
+    try:
+        resp = requests.get(url, headers=HEADERS, params=params, timeout=15)
+        if resp.status_code != 200:
+            logger.error(f"Fixtures error: {resp.status_code}")
+            return []
+        return resp.json().get("response", [])
+    except Exception as e:
+        logger.error(f"Fixtures exception: {e}")
+        return []
+
+# === STATS DO TIME ===
+def get_team_stats(team_id: int) -> Dict:
+    url = f"{BASE_URL}/teams/statistics"
+    params = {"team": team_id, "league": 71, "season": 2025}
+    try:
+        resp = requests.get(url, headers=HEADERS, params=params, timeout=15)
+        if resp.status_code != 200:
+            return {}
+        data = resp.json().get("response", {})
+        if not data: return {}
+        s = data.get("statistics", [{}])[0]
+        return {
+            "jogos": s.get("fixtures", {}).get("played", {}).get("total", 0),
+            "vitorias": s.get("fixtures", {}).get("wins", {}).get("total", 0),
+            "gols_marcados": s.get("goals", {}).get("for", {}).get("total", {}).get("total", 0),
+            "gols_sofridos": s.get("goals", {}).get("against", {}).get("total", {}).get("total", 0),
+            "clean_sheets": s.get("clean_sheet", {}).get("total", 0),
+            "cartoes": s.get("cards", {}).get("yellow", {}).get("total", 0)
         }
-        fonte = "Fallback (dados reais 2022)"
-    else:
-        stats = stats_resp
-        fonte = "API-Sports v3 - Dados REAIS 2022"
-    
-    jogos_exemplos = [
-        {"home": "Flamengo", "away": "Athletico-PR", "data": "2022-11-13"},
-        {"home": "São Paulo", "away": "Flamengo", "data": "2022-11-16"},
-        {"home": "Flamengo", "away": "Santos", "data": "2022-11-20"}
-    ]
-    
+    except: return {}
+
+# === H2H ===
+def get_h2h(team1: int, team2: int) -> List[Dict]:
+    url = f"{BASE_URL}/fixtures/head2head"
+    params = {"h2h": f"{team1}-{team2}"}
+    try:
+        resp = requests.get(url, headers=HEADERS, params=params, timeout=15)
+        if resp.status_code != 200:
+            return []
+        return resp.json().get("response", [])
+    except: return []
+
+# === GERAR VALUE BETS (IA) ===
+def generate_value_bets():
+    fixtures = get_today_fixtures()
+    if not fixtures:
+        return {"status": "sem jogos hoje"}
+
     added = 0
-    for jogo in jogos_exemplos:
-        home = jogo["home"]
-        away = jogo["away"]
+    for fixture in fixtures[:5]:  # 5 jogos por dia
+        home = fixture["teams"]["home"]["name"]
+        away = fixture["teams"]["away"]["name"]
         match = f"{home} vs {away}"
-        
-        jogos = stats["jogos"] or 1
-        vitorias = stats["vitorias"] or 0
-        gols_marcados = stats["gols_marcados"] or 0
-        gols_sofridos = stats["gols_sofridos"] or 0
-        cartoes = stats["cartoes_amarelos"] or 0
-        
-        bets = [
-            {
-                "market": "1X2", "selection": "Flamengo", "odd": 1.75, "edge": 0.28,
-                "why": f"Flamengo: {vitorias} vitórias em {jogos} jogos (média {round(vitorias/jogos, 2)} vitórias/jogo)"
-            },
-            {
-                "market": "gols", "selection": "Over 2.5", "odd": 1.95, "edge": 0.22,
-                "why": f"Média de {round((gols_marcados + gols_sofridos) / jogos, 1)} gols por jogo"
-            },
-            {
-                "market": "cartoes", "selection": "Over 5.5", "odd": 2.10, "edge": 0.30,
-                "why": f"{cartoes} cartões amarelos em {jogos} jogos (média {round(cartoes/jogos, 1)}/jogo)"
-            }
-        ]
-        
-        for bt in bets:
-            data = {
-                **bt,
+        home_id = fixture["teams"]["home"]["id"]
+        away_id = fixture["teams"]["away"]["id"]
+
+        home_stats = get_team_stats(home_id)
+        away_stats = get_team_stats(away_id)
+        h2h = get_h2h(home_id, away_id)
+
+        # Over 2.5
+        total_goals = (home_stats.get("gols_marcados", 0) + away_stats.get("gols_sofridos", 0)) / max(home_stats.get("jogos", 1), 1)
+        if total_goals > 2.7:
+            bet = {
                 "match": match,
                 "home_team": home,
                 "away_team": away,
-                "bet_date": datetime.datetime.utcnow().isoformat()
+                "market": "gols",
+                "selection": "Over 2.5",
+                "odd": 1.90,
+                "edge": 0.25,
+                "why": f"Média {total_goals:.1f} gols/jogo. {len([h for h in h2h if h['goals']['home'] + h['goals']['away'] > 2])}/10 H2H Over 2.5"
             }
-            supabase.table("bets").delete()\
-                .eq("match", match)\
-                .eq("market", bt["market"])\
-                .execute()
-            supabase.table("bets").insert(data).execute()
+            add_bet_to_db(bet)
             added += 1
-    
-    return {
-        "status": f"{added} value bets REAIS do Flamengo cadastradas!",
-        "fonte": fonte,
-        "stats": stats,
-        "exemplo": "Flamengo vs Athletico-PR - Over 2.5 @1.95"
-    }
+
+        # Ambos Marcam
+        btts_count = len([h for h in h2h if h['goals']['home'] > 0 and h['goals']['away'] > 0])
+        if btts_count >= 6:
+            bet = {
+                "match": match,
+                "home_team": home,
+                "away_team": away,
+                "market": "ambos marcam",
+                "selection": "Sim",
+                "odd": 1.85,
+                "edge": 0.22,
+                "why": f"BTTS em {btts_count}/10 H2H. {home}: {home_stats.get('gols_marcados',0)} gols, {away}: {away_stats.get('gols_marcados',0)} gols"
+            }
+            add_bet_to_db(bet)
+            added += 1
+
+    return {"status": f"{added} value bets geradas para hoje!"}
+
+def add_bet_to_db(bet: Dict):
+    data = {**bet, "bet_date": datetime.datetime.utcnow().isoformat()}
+    supabase.table("bets").delete().eq("match", bet["match"]).eq("market", bet["market"]).execute()
+    supabase.table("bets").insert(data).execute()
+
+# === ENDPOINTS NOVOS ===
+@app.get("/api/generate-today")
+def generate_today():
+    return generate_value_bets()
+
+@app.get("/api/clear-bets")
+def clear_bets():
+    supabase.table("bets").delete().execute()
+    return {"status": "bets limpas"}
 
 # === SERVIR FRONTEND ===
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
