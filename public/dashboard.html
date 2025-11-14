@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" x-data="dashboard()" x-init="fetchBets()">
+<html lang="pt-BR" x-data="dashboard()" x-init="loadEnv().then(fetchBets)">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -68,7 +68,7 @@
     <div class="max-w-7xl mx-auto">
       <div class="grid md:grid-cols-3 gap-6">
         
-        <!-- LOADING SKELETON -->
+        <!-- LOADING -->
         <template x-if="loading">
           <div x-for="i in 9" class="blur-card rounded-xl p-6">
             <div class="h-6 skeleton rounded mb-3"></div>
@@ -116,7 +116,7 @@
           </div>
         </template>
 
-        <!-- EMPTY STATE -->
+        <!-- EMPTY -->
         <div x-show="!loading && filteredBets.length === 0" class="col-span-3 text-center py-16 text-gray-400">
           <p class="text-xl">Nenhuma aposta no momento.</p>
           <p class="text-sm mt-2">Volte às 8h para novas entradas!</p>
@@ -126,24 +126,33 @@
   </section>
 
   <!-- ALPINE + SUPABASE -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
-    // PUXA DO RENDER (process.env no Node, mas no frontend usamos window)
-    const SUPABASE_URL = window.SUPABASE_URL || 'https://SEU_PROJETO.supabase.co'
-    const SUPABASE_KEY = window.SUPABASE_KEY || 'SUA_CHAVE_ANON_AQUI'
-
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-
     function dashboard() {
       return {
+        supabase: null,
         bets: [],
         filter: 'all',
         loading: true,
-        updateTime: '',
+        updateTime: 'Carregando...',
+
+        async loadEnv() {
+          try {
+            const res = await fetch('/env')
+            const env = await res.json()
+            this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
+          } catch (err) {
+            console.error('Erro ao carregar env:', err)
+            this.updateTime = 'Erro de conexão.'
+          }
+        },
 
         async fetchBets() {
+          if (!this.supabase) return
+
           this.loading = true
           try {
-            const { data, error } = await supabase
+            const { data, error } = await this.supabase
               .from('value_bets')
               .select('*')
               .eq('active', true)
@@ -159,7 +168,7 @@
           } catch (err) {
             console.error('Erro Supabase:', err)
             this.bets = []
-            this.updateTime = 'Erro ao carregar. Tente novamente.'
+            this.updateTime = 'Erro ao carregar apostas.'
           } finally {
             this.loading = false
           }
@@ -171,13 +180,6 @@
         }
       }
     }
-  </script>
-
-  <!-- INJETAR VARIÁVEIS DO RENDER (NO SERVIDOR) -->
-  <script>
-    // NO RENDER: use isso no seu servidor Node/Express antes de servir o HTML
-    // res.send(html.replace('window.SUPABASE_URL = null', `window.SUPABASE_URL = '${process.env.SUPABASE_URL}'`))
-    // res.send(html.replace('window.SUPABASE_KEY = null', `window.SUPABASE_KEY = '${process.env.SUPABASE_KEY}'`))
   </script>
 </body>
 </html>
