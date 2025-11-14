@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" x-data="{ mobileMenu: false }">
+<html lang="pt-BR" x-data="app()" x-init="init()">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -15,6 +15,7 @@
       box-shadow: 0 25px 50px rgba(139, 92, 246, 0.4);
     }
     .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.6); border: 1px solid rgba(139, 92, 246, 0.2); }
+    .skeleton { @apply bg-gray-800 animate-pulse rounded; }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen gradient-bg">
@@ -28,10 +29,28 @@
           OddGuru
         </h1>
       </div>
+
+      <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center space-x-8">
         <a href="#planos" class="text-gray-300 hover:text-white">Planos</a>
         <a href="#faq" class="text-gray-300 hover:text-white">Dúvidas</a>
         <a href="/dashboard" class="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-medium">Entrar</a>
+      </div>
+
+      <!-- MOBILE HAMBURGER -->
+      <button @click="mobileMenu = !mobileMenu" class="md:hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- MOBILE MENU -->
+    <div x-show="mobileMenu" class="md:hidden border-t border-gray-800 bg-black/90" x-cloak>
+      <div class="px-4 py-3 space-y-2">
+        <a href="#planos" class="block text-gray-300">Planos</a>
+        <a href="#faq" class="block text-gray-300">Dúvidas</a>
+        <a href="/dashboard" class="block bg-purple-600 py-2 rounded-lg text-center font-medium">Entrar</a>
       </div>
     </div>
   </nav>
@@ -75,88 +94,60 @@
     </div>
   </section>
 
-  <!-- TEASER BETS (3 CARDS) -->
+  <!-- TEASER BETS (DINÂMICO) -->
   <section class="py-16 px-4">
     <div class="max-w-7xl mx-auto">
       <h2 class="text-3xl font-bold text-center mb-12">Exemplo do que você recebe</h2>
-      <div class="grid md:grid-cols-3 gap-6">
-        <!-- CARD 1 -->
-        <div class="blur-card rounded-xl p-6 card-hover">
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <h3 class="font-bold text-lg">Flamengo × Corinthians</h3>
-              <p class="text-xs text-gray-400">Brasileirão • 19:30</p>
-            </div>
-            <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold">+32%</span>
+      
+      <!-- LOADING -->
+      <div x-show="loading" class="grid md:grid-cols-3 gap-6">
+        <div x-for="i in 3" class="blur-card rounded-xl p-6">
+          <div class="h-6 skeleton mb-3"></div>
+          <div class="h-4 skeleton w-24 mb-4"></div>
+          <div class="h-5 skeleton mb-2"></div>
+          <div class="h-4 skeleton w-32 mb-4"></div>
+          <div class="flex justify-between items-center mb-4">
+            <div class="h-8 skeleton w-16"></div>
+            <div class="h-9 skeleton w-20"></div>
           </div>
-          <p class="font-bold text-cyan-400 mt-2">Flamengo Vence</p>
-          <p class="text-sm text-gray-300">Resultado Final</p>
-          <div class="mt-3 flex justify-between items-center">
-            <div>
-              <p class="text-xs text-gray-400">Odd</p>
-              <p class="text-xl font-bold text-green-400">1.95</p>
-            </div>
-            <a href="https://betano.com/?tag=oddguru" target="_blank" class="bg-green-600 hover:bg-green-500 text-black font-bold px-4 py-2 rounded-lg text-sm">
-              Apostar
-            </a>
-          </div>
-          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
-            <p class="font-medium text-purple-400">Por quê?</p>
-            <p>Flamengo 5 vitórias em casa. Modelo prevê 68% → odd justa = 1.47.</p>
-          </div>
+          <div class="h-16 skeleton"></div>
         </div>
+      </div>
 
-        <!-- CARD 2 -->
-        <div class="blur-card rounded-xl p-6 card-hover">
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <h3 class="font-bold text-lg">Palmeiras × São Paulo</h3>
-              <p class="text-xs text-gray-400">Brasileirão • 21:00</p>
+      <!-- CARDS DINÂMICOS -->
+      <div x-show="!loading" class="grid md:grid-cols-3 gap-6">
+        <template x-for="bet in teaserBets" x-key="bet.id">
+          <div class="blur-card rounded-xl p-6 card-hover">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <h3 class="font-bold text-lg" x-text="bet.match"></h3>
+                <p class="text-xs text-gray-400" x-text="`${bet.league} • ${bet.time}`"></p>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold" 
+                    x-text="`+${(bet.edge * 100).toFixed(0)}%`"></span>
             </div>
-            <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold">+28%</span>
-          </div>
-          <p class="font-bold text-cyan-400 mt-2">Mais de 2.5 Gols</p>
-          <p class="text-sm text-gray-300">Total de Gols</p>
-          <div class="mt-3 flex justify-between items-center">
-            <div>
-              <p class="text-xs text-gray-400">Odd</p>
-              <p class="text-xl font-bold text-green-400">2.10</p>
+            <p class="font-bold text-cyan-400 mt-2" x-text="bet.selection"></p>
+            <p class="text-sm text-gray-300" x-text="bet.market"></p>
+            <div class="mt-3 flex justify-between items-center">
+              <div>
+                <p class="text-xs text-gray-400" x-text="`Odd na ${bet.bookmaker}`"></p>
+                <p class="text-xl font-bold text-green-400" x-text="bet.odd"></p>
+              </div>
+              <a :href="bet.affiliate_link" target="_blank" class="bg-green-600 hover:bg-green-500 text-black font-bold px-4 py-2 rounded-lg text-sm">
+                Apostar
+              </a>
             </div>
-            <a href="https://bet365.com/?tag=oddguru" target="_blank" class="bg-green-600 hover:bg-green-500 text-black font-bold px-4 py-2 rounded-lg text-sm">
-              Apostar
-            </a>
+            <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
+              <p class="font-medium text-purple-400">Por quê?</p>
+              <p x-text="bet.why"></p>
+            </div>
           </div>
-          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
-            <p class="font-medium text-purple-400">Por quê?</p>
-            <p>Média de 3.8 gols nos últimos 6 jogos. Modelo prevê 64%.</p>
-          </div>
-        </div>
+        </template>
+      </div>
 
-        <!-- CARD 3 -->
-        <div class="blur-card rounded-xl p-6 card-hover">
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <h3 class="font-bold text-lg">Internacional × Grêmio</h3>
-              <p class="text-xs text-gray-400">Brasileirão • 20:00</p>
-            </div>
-            <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400 font-bold">+35%</span>
-          </div>
-          <p class="font-bold text-cyan-400 mt-2">Ambos Marcam</p>
-          <p class="text-sm text-gray-300">BTTS</p>
-          <div class="mt-3 flex justify-between items-center">
-            <div>
-              <p class="text-xs text-gray-400">Odd</p>
-              <p class="text-xl font-bold text-green-400">1.80</p>
-            </div>
-            <a href="https://pixbet.com/?tag=oddguru" target="_blank" class="bg-green-600 hover:bg-green-500 text-black font-bold px-4 py-2 rounded-lg text-sm">
-              Apostar
-            </a>
-          </div>
-          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
-            <p class="font-medium text-purple-400">Por quê?</p>
-            <p>Gre-Nal com média de 2.9 gols. Modelo prevê 72%.</p>
-          </div>
-        </div>
+      <!-- SEM APOSTAS -->
+      <div x-show="!loading && teaserBets.length === 0" class="text-center py-12 text-gray-400">
+        <p>Nenhuma aposta no momento.</p>
       </div>
     </div>
   </section>
@@ -172,7 +163,7 @@
           <h3 class="text-xl font-bold">Grátis</h3>
           <p class="text-3xl font-bold mt-4">R$0</p>
           <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
-            <li>1 aposta por semana</li>
+            <li>3 apostas por semana</li>
             <li>Sem análise completa</li>
             <li>Ideal pra testar</li>
           </ul>
@@ -233,5 +224,32 @@
 
   <!-- ALPINE -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('app', () => ({
+        mobileMenu: false,
+        loading: true,
+        teaserBets: [],
+
+        async init() {
+          await this.loadTeaser()
+        },
+
+        async loadTeaser() {
+          try {
+            const res = await fetch('https://api-hqfm.onrender.com/api/teaser')
+            if (!res.ok) throw new Error('Erro na API')
+            const data = await res.json()
+            this.teaserBets = data.bets || []
+          } catch (err) {
+            console.error('Erro ao carregar teaser:', err)
+            this.teaserBets = []
+          } finally {
+            this.loading = false
+          }
+        }
+      }))
+    })
+  </script>
 </body>
 </html>
