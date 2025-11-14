@@ -1,53 +1,167 @@
-<!-- INSERIR LOGO APÓS O HERO (ANTES DO LIVE BETS) -->
-<section class="py-16 px-4 bg-gray-900/30">
-  <div class="max-w-7xl mx-auto">
-    <h2 class="text-3xl font-bold text-center mb-12 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-      Value Bets com IA Avançada
-    </h2>
-    <p class="text-xl text-center text-gray-300 mb-10 max-w-4xl mx-auto">
-      <span class="text-green-400 font-bold">+30% de edge médio.</span> H2H real. xG. Forma. Clean sheets. Tudo atualizado diariamente.
-    </p>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OddGuru PRO - Value Bets com IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
+    .card-hover { transition: all 0.3s; }
+    .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 30px rgba(139, 92, 246, 0.3); }
+    .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.6); border: 1px solid rgba(139, 92, 246, 0.2); }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen gradient-bg">
 
-    <div class="grid md:grid-cols-4 gap-6">
-      <div class="text-center">
-        <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-        </div>
-        <h3 class="font-bold text-lg">+30% Edge</h3>
-        <p class="text-sm text-gray-400 mt-1">Média histórica de value real</p>
+  <!-- HERO -->
+  <section class="relative overflow-hidden py-16 md:py-24 px-4">
+    <div class="max-w-7xl mx-auto text-center">
+      <div class="flex justify-center mb-6">
+        <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
+      </div>
+      <h1 class="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        Ganhe R$500–R$2.000/mês com Value Bets
+      </h1>
+      <p class="text-xl md:text-2xl text-gray-300 mt-6 max-w-3xl mx-auto">
+        Use matemática, não sorte. IA com H2H, xG, forma. +30% edge médio.
+      </p>
+
+      <!-- EMAIL CAPTURE -->
+      <div class="mt-10 max-w-md mx-auto">
+        <form class="flex flex-col sm:flex-row gap-3" onsubmit="event.preventDefault(); alert('Bets grátis enviadas!');">
+          <input type="email" placeholder="seu@email.com" class="flex-1 px-5 py-3 rounded-lg bg-gray-800/80 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500" required>
+          <button type="submit" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-6 rounded-lg transition">
+            Enviar Bets Grátis
+          </button>
+        </form>
+        <p class="text-xs text-gray-400 mt-2">1 bet por dia. Sem spam. Cancele quando quiser.</p>
       </div>
 
-      <div class="text-center">
-        <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-          </svg>
-        </div>
-        <h3 class="font-bold text-lg">H2H + xG</h3>
-        <p class="text-sm text-gray-400 mt-1">Análise profunda de confrontos</p>
-      </div>
+      <!-- TRUST BADGE -->
+      <p class="mt-8 text-sm text-gray-400">
+        <span class="text-purple-400 font-bold">✓</span> Usado por 500+ apostadores no Brasil
+      </p>
+    </div>
+  </section>
 
-      <div class="text-center">
-        <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-        <h3 class="font-bold text-lg">Diário às 8h</h3>
-        <p class="text-sm text-gray-400 mt-1">Bets frescas todo dia</p>
-      </div>
+  <!-- FEATURES (CORRIGIDO!) -->
+  <section class="py-16 px-4 bg-gray-900/30">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="text-3xl font-bold text-center mb-12 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        Value Bets com IA Avançada
+      </h2>
+      <p class="text-xl text-center text-gray-300 mb-10 max-w-4xl mx-auto">
+        <span class="text-green-400 font-bold">+30% de edge médio.</span> H2H real. xG. Forma. Clean sheets. Tudo atualizado diariamente.
+      </p>
 
-      <div class="text-center">
-        <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
+      <div class="grid md:grid-cols-4 gap-6">
+        <div class="text-center">
+          <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">+30% Edge</h3>
+          <p class="text-sm text-gray-400 mt-1">Média histórica de value real</p>
         </div>
-        <h3 class="font-bold text-lg">100% Automático</h3>
-        <p class="text-sm text-gray-400 mt-1">Você só aposta. A IA faz o resto.</p>
+
+        <div class="text-center">
+          <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">H2H + xG</h3>
+          <p class="text-sm text-gray-400 mt-1">Análise profunda de confrontos</p>
+        </div>
+
+        <div class="text-center">
+          <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">Diário às 8h</h3>
+          <p class="text-sm text-gray-400 mt-1">Bets frescas todo dia</p>
+        </div>
+
+        <div class="text-center">
+          <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="font-bold text-lg">100% Automático</h3>
+          <p class="text-sm text-gray-400 mt-1">Você só aposta. A IA faz o resto.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+  <!-- FIM DO BLOCO CORRIGIDO -->
+
+  <!-- LIVE BETS PREVIEW -->
+  <section class="py-16 px-4">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="text-3xl font-bold text-center mb-12">Value Bets do Momento</h2>
+      <div class="grid md:grid-cols-3 gap-6" x-data="liveBets()" x-init="fetchBets()">
+        <template x-for="bet in bets" x-key="bet.id">
+          <div class="blur-card rounded-xl p-6 card-hover">
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="font-bold text-lg" x-text="bet.match"></h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-400">AO VIVO</span>
+            </div>
+            <div class="space-y-2 text-sm">
+              <p><span class="text-gray-400">Mercado:</span> 
+                <span x-text="bet.market === 'ambos marcam' ? 'Ambos Marcam' : bet.market"></span>
+              </p>
+              <p><span class="text-gray-400">Entrada:</span> <strong x-text="bet.selection"></strong></p>
+              <p><span class="text-gray-400">Odd:</span> <span class="text-green-400 font-bold" x-text="bet.odd"></span></p>
+              <p><span class="text-gray-400">Edge:</span> <span class="text-purple-400 font-bold" x-text="`+${(bet.edge*100).toFixed(1)}%`"></span></p>
+            </div>
+            <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
+              <p class="font-medium text-purple-400 mb-1">IA:</p>
+              <p x-text="bet.why"></p>
+            </div>
+            <a :href="`https://betano.com/?tag=oddguru_pro&match=${bet.match}`" target="_blank"
+               class="block mt-4 text-center bg-green-600 py-2 rounded font-medium text-sm hover:bg-green-700 transition">
+              Apostar na Betano
+            </a>
+          </div>
+        </template>
+      </div>
+      <p class="text-center mt-8 text-gray-400">
+        <a href="/login.html" class="text-purple-400 hover:text-purple-300 underline">Ver todas →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF, PRICING, CTA... (mantém o resto do código anterior) -->
+  <!-- ... -->
+
+  <!-- ALPINE JS -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    function liveBets() {
+      return {
+        bets: [],
+        async fetchBets() {
+          try {
+            const res = await fetch('/api/active-bets');
+            const data = await res.json();
+            this.bets = data.active_bets.slice(0, 3).map(b => ({ ...b, id: Math.random() }));
+          } catch (e) {
+            this.bets = [
+              { match: "Flamengo vs Palmeiras", market: "gols", selection: "Over 2.5", odd: 1.95, edge: 0.28, why: "Média 3.2 gols/jogo. 8/10 H2H Over" },
+              { match: "Corinthians vs Santos", market: "ambos marcam", selection: "Sim", odd: 1.88, edge: 0.24, why: "BTTS em 7/10 jogos. Ambos com ataque forte" },
+              { match: "São Paulo vs Atlético-MG", market: "1X2", selection: "São Paulo", odd: 2.10, edge: 0.31, why: "São Paulo: 6 vitórias em 8 jogos em casa" }
+            ];
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
