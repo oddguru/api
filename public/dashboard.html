@@ -1,13 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR" x-data="dashboard()" x-init="loadEnv().then(fetchBets)">
+<html lang="pt-BR" x-data="dashboard()" x-init="init()">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>OddGuru PRO - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- SUPABASE JS (OBRIGATÓRIO) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
@@ -69,20 +67,22 @@
     <div class="max-w-7xl mx-auto">
       <div class="grid md:grid-cols-3 gap-6">
         
-        <!-- LOADING (CORRIGIDO: x-for com Array) -->
-        <template x-if="loading">
-          <div x-for="i in Array(9)" :key="i" class="blur-card rounded-xl p-6">
-            <div class="h-6 skeleton mb-3"></div>
-            <div class="h-4 skeleton w-24 mb-4"></div>
-            <div class="h-5 skeleton mb-2"></div>
-            <div class="h-4 skeleton w-32 mb-4"></div>
-            <div class="flex justify-between items-center mb-4">
-              <div class="h-8 skeleton w-16"></div>
-              <div class="h-9 skeleton w-20"></div>
+        <!-- LOADING (SEM x-for, SEM KEY) -->
+        <div x-show="loading" class="col-span-3 space-y-6">
+          <div class="grid md:grid-cols-3 gap-6">
+            <div x-for="i in 9" class="blur-card rounded-xl p-6">
+              <div class="h-6 skeleton mb-3"></div>
+              <div class="h-4 skeleton w-24 mb-4"></div>
+              <div class="h-5 skeleton mb-2"></div>
+              <div class="h-4 skeleton w-32 mb-4"></div>
+              <div class="flex justify-between items-center mb-4">
+                <div class="h-8 skeleton w-16"></div>
+                <div class="h-9 skeleton w-20"></div>
+              </div>
+              <div class="h-16 skeleton"></div>
             </div>
-            <div class="h-16 skeleton"></div>
           </div>
-        </template>
+        </div>
 
         <!-- BETS -->
         <template x-for="bet in filteredBets" x-key="bet.id">
@@ -126,7 +126,8 @@
     </div>
   </section>
 
-  <!-- ALPINE + SCRIPT -->
+  <!-- SUPABASE + ALPINE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
     function dashboard() {
@@ -137,11 +138,17 @@
         loading: true,
         updateTime: 'Carregando...',
 
+        async init() {
+          await this.loadEnv()
+          await this.fetchBets()
+        },
+
         async loadEnv() {
           try {
             const res = await fetch('https://api-hqfm.onrender.com/env')
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const env = await res.json()
+            // ESPERA O SUPABASE CARREGAR
             this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
             console.log('Supabase conectado!')
           } catch (err) {
@@ -151,7 +158,10 @@
         },
 
         async fetchBets() {
-          if (!this.supabase) return
+          if (!this.supabase) {
+            this.loading = false
+            return
+          }
 
           this.loading = true
           try {
