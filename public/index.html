@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" x-data="{ lang: 'pt', mobileMenu: false }">
+<html lang="pt-BR" x-data="{ lang: 'pt', mobileMenu: false, showChat: false }">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -9,195 +9,141 @@
   <style>
     body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
-    .card-hover { transition: all 0.3s; }
-    .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 30px rgba(139, 92, 246, 0.3); }
-    .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.6); border: 1px solid rgba(139, 92, 246, 0.2); }
-    .lang-active { @apply text-purple-400 font-bold; }
+    .neon-border { border: 2px solid; border-image: linear-gradient(45deg, #00ff9d, #00b8ff) 1; border-radius: 16px; }
+    .neon-glow { box-shadow: 0 0 20px rgba(0, 255, 157, 0.4), 0 0 40px rgba(0, 184, 255, 0.3); }
+    .btn-neon { background: linear-gradient(45deg, #00ff9d, #00b8ff); color: black; font-weight: bold; }
+    .btn-neon:hover { background: linear-gradient(45deg, #00cc7a, #0099cc); }
+    .card-hover:hover { transform: translateY(-8px); }
   </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen gradient-bg">
 
-  <!-- NAVBAR -->
+  <!-- NAVBAR (ODDSJAM STYLE) -->
   <nav class="border-b border-gray-800 backdrop-blur-sm bg-black/60 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
-        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <div class="w-10 h-10 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full"></div>
+        <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-green-400 bg-clip-text text-transparent">
           OddGuru
         </h1>
       </div>
 
       <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center space-x-8">
-        <a href="#features" class="text-gray-300 hover:text-white transition">Features</a>
-        <a href="#faq" class="text-gray-300 hover:text-white transition">FAQ</a>
-        <a href="/login.html" class="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-medium transition">Login</a>
+        <div class="relative" x-data="{ open: false }">
+          <button @click="open = !open" class="text-gray-300 hover:text-white flex items-center space-x-1">
+            <span>Tools</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div x-show="open" @click.away="open = false" class="absolute top-10 left-0 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl">
+            <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-800">Calculadora de Edge</a>
+            <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-800">Kelly Criterion</a>
+            <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-800">Bankroll Tracker</a>
+          </div>
+        </div>
+
+        <a href="#pricing" class="text-gray-300 hover:text-white">Pricing</a>
+
+        <div class="relative" x-data="{ open: false }">
+          <button @click="open = !open" class="text-gray-300 hover:text-white flex items-center space-x-1">
+            <span>Resources</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div x-show="open" @click.away="open = false" class="absolute top-10 left-0 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl">
+            <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-800">Blog</a>
+            <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-800">Guia de Value Betting</a>
+            <a href="#" class="block px-4 py-3 text-sm hover:bg-gray-800">Discord</a>
+          </div>
+        </div>
+
+        <a href="/login.html" class="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-medium">Login</a>
+
+        <!-- TRY FOR FREE -->
+        <a href="/login.html" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-6 py-2 rounded-full text-sm">
+          Try for Free
+        </a>
 
         <!-- IDIOMAS -->
         <div class="flex items-center space-x-2 border-l border-gray-700 pl-4">
-          <button @click="lang = 'pt'" :class="lang === 'pt' ? 'lang-active' : 'text-gray-400'" class="text-sm">PT</button>
+          <button @click="lang = 'pt'" :class="lang === 'pt' ? 'text-cyan-400 font-bold' : 'text-gray-400'" class="text-xs">PT</button>
           <span class="text-gray-600">|</span>
-          <button @click="lang = 'en'" :class="lang === 'en' ? 'lang-active' : 'text-gray-400'" class="text-sm">EN</button>
+          <button @click="lang = 'en'" :class="lang === 'en' ? 'text-cyan-400 font-bold' : 'text-gray-400'" class="text-xs">EN</button>
           <span class="text-gray-600">|</span>
-          <button @click="lang = 'es'" :class="lang === 'es' ? 'lang-active' : 'text-gray-400'" class="text-sm">ES</button>
+          <button @click="lang = 'es'" :class="lang === 'es' ? 'text-cyan-400 font-bold' : 'text-gray-400'" class="text-xs">ES</button>
         </div>
       </div>
 
-      <!-- MOBILE MENU BUTTON -->
+      <!-- MOBILE -->
       <button @click="mobileMenu = !mobileMenu" class="md:hidden text-gray-300">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-    </div>
-
-    <!-- MOBILE MENU -->
-    <div x-show="mobileMenu" class="md:hidden bg-gray-900/95 backdrop-blur border-t border-gray-800">
-      <div class="px-4 py-4 space-y-3">
-        <a href="#features" class="block text-gray-300 hover:text-white">Features</a>
-        <a href="#faq" class="block text-gray-300 hover:text-white">FAQ</a>
-        <a href="/login.html" class="block bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg font-medium text-center">Login</a>
-        <div class="flex justify-center space-x-3 pt-3 border-t border-gray-800">
-          <button @click="lang = 'pt'; mobileMenu = false" :class="lang === 'pt' ? 'lang-active' : 'text-gray-400'" class="text-sm">PT</button>
-          <span class="text-gray-600">|</span>
-          <button @click="lang = 'en'; mobileMenu = false" :class="lang === 'en' ? 'lang-active' : 'text-gray-400'" class="text-sm">EN</button>
-          <span class="text-gray-600">|</span>
-          <button @click="lang = 'es'; mobileMenu = false" :class="lang === 'es' ? 'lang-active' : 'text-gray-400'" class="text-sm">ES</button>
-        </div>
-      </div>
     </div>
   </nav>
 
   <!-- HERO -->
-  <section class="py-20 px-4 text-center">
-    <h1 class="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-      Value Bets com IA Real
+  <section class="py-16 px-4 text-center">
+    <h1 class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-cyan-400 to-green-400 bg-clip-text text-transparent">
+      OddGURU PRO
     </h1>
-    <p class="text-xl md:text-2xl text-gray-300 mt-6 max-w-3xl mx-auto">
-      +30% edge médio. H2H. xG. Forma. Tudo atualizado diariamente.
-    </p>
+    <p class="text-lg text-cyan-300 mt-4">Value Bets com fundamento • Todos os mercados • Atualizado em tempo real</p>
+
+    <!-- HISTÓRICO + ROI -->
     <div class="mt-10">
-      <a href="/login.html" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-8 rounded-xl text-lg transition inline-block">
-        Teste Grátis 7 Dias
+      <a href="/dashboard.html" class="btn-neon px-8 py-4 rounded-full text-lg font-bold inline-block neon-glow">
+        VER HISTÓRICO + ROI AO VIVO
       </a>
-      <p class="text-sm text-gray-400 mt-3">Sem cartão. Cancele quando quiser.</p>
     </div>
   </section>
 
-  <!-- LIVE BETS -->
-  <section id="features" class="py-16 px-4">
-    <div class="max-w-7xl mx-auto">
-      <h2 class="text-3xl font-bold text-center mb-12">Value Bets do Dia</h2>
-      <div class="grid md:grid-cols-3 gap-6" x-data="liveBets()" x-init="fetchBets()">
-        <template x-for="bet in bets" x-key="bet.id">
-          <div class="blur-card rounded-xl p-6 card-hover">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-bold text-lg" x-text="bet.match"></h3>
-              <span class="text-xs px-2 py-1 rounded-full bg-yellow-600">Pendente</span>
-            </div>
-            <div class="space-y-2 text-sm">
-              <p><span class="text-gray-400">Mercado:</span> 
-                <span x-text="bet.market === 'ambos marcam' ? 'Ambos Marcam' : bet.market"></span>
-              </p>
-              <p><span class="text-gray-400">Entrada:</span> <strong x-text="bet.selection"></strong></p>
-              <p><span class="text-gray-400">Odd:</span> <span class="text-green-400 font-bold" x-text="bet.odd"></span></p>
-              <p><span class="text-gray-400">Edge:</span> <span class="text-purple-400 font-bold" x-text="`+${(bet.edge*100).toFixed(1)}%`"></span></p>
-            </div>
-            <div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-xs text-gray-300">
-              <p class="font-medium text-purple-400 mb-1">IA:</p>
-              <p x-text="bet.why"></p>
-            </div>
+  <!-- VALUE BETS (NEON CARDS) -->
+  <section class="py-16 px-4">
+    <div class="max-w-5xl mx-auto space-y-8" x-data="liveBets()" x-init="fetchBets()">
+      <template x-for="bet in bets" x-key="bet.id">
+        <div class="neon-border p-6 rounded-2xl bg-gray-900/80 card-hover neon-glow">
+          <h3 class="text-xl font-bold text-cyan-400" x-text="bet.match"></h3>
+          <p class="text-green-400 font-bold mt-1" x-text="bet.market.toUpperCase() + ' • ' + bet.selection"></p>
+          <p class="text-lg mt-2">
+            <span class="text-white">Odd:</span> 
+            <span class="text-yellow-400 font-bold" x-text="bet.odd"></span> | 
+            <span class="text-white">Edge:</span> 
+            <span class="text-green-400 font-bold" x-text="`+${(bet.edge*100).toFixed(1)}%`"></span>
+          </p>
+          <div class="mt-4 p-3 bg-gray-800/50 rounded-lg text-sm">
+            <p class="text-green-400 font-medium">POR QUÊ ESSA É VALUE BET?</p>
+            <p class="text-gray-300" x-text="bet.why"></p>
           </div>
-        </template>
-        <div x-show="bets.length === 0" class="col-span-3 text-center py-12 text-gray-400">
-          Nenhuma value bet no momento. Volte às 8h!
+          <a :href="`https://betano.com/?tag=oddguru_pro`" target="_blank"
+             class="mt-4 block text-center bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold py-3 rounded-lg hover:from-green-400 hover:to-cyan-400 transition">
+            APOSTE AGORA!
+          </a>
         </div>
+      </template>
+      <div x-show="bets.length === 0" class="text-center py-12 text-gray-400">
+        Nenhuma value bet no momento. Volte às 8h!
       </div>
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section id="faq" class="py-16 px-4 bg-gray-900/30">
-    <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-center mb-12">Perguntas Frequentes</h2>
-      <div class="space-y-6">
-        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
-          <summary class="font-bold text-lg flex justify-between items-center">
-            O que é value bet?
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </summary>
-          <p class="mt-4 text-gray-300">É quando a odd da casa de aposta está acima da probabilidade real do evento. Ex: odd 2.10 com 55% de chance = +10% edge.</p>
-        </details>
+  <!-- CHATBOT (PLACEHOLDER) -->
+  <button @click="showChat = !showChat" class="fixed bottom-6 right-6 bg-cyan-500 hover:bg-cyan-400 text-black p-4 rounded-full shadow-xl z-40">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.2 15.3 3 13.71 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+  </button>
 
-        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
-          <summary class="font-bold text-lg flex justify-between items-center">
-            Como a IA calcula o edge?
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </summary>
-          <p class="mt-4 text-gray-300">Usa H2H, forma recente, xG, clean sheets, cartões, lesões e modelo estatístico treinado em 10+ anos de dados.</p>
-        </details>
-
-        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
-          <summary class="font-bold text-lg flex justify-between items-center">
-            Posso cancelar a qualquer momento?
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </summary>
-          <p class="mt-4 text-gray-300">Sim. 100% sem multa. Cancele no painel ou por email.</p>
-        </details>
-
-        <details class="bg-gray-800/60 rounded-xl p-6 cursor-pointer">
-          <summary class="font-bold text-lg flex justify-between items-center">
-            Funciona em outros países?
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </summary>
-          <p class="mt-4 text-gray-300">Sim! Já temos Premier League, La Liga, Serie A. Mais ligas em 2026.</p>
-        </details>
-      </div>
+  <div x-show="showChat" class="fixed bottom-20 right-6 w-80 bg-gray-900 border border-cyan-500 rounded-xl shadow-2xl p-4 z-40">
+    <div class="flex justify-between items-center mb-3">
+      <h4 class="font-bold text-cyan-400">OddGuru Assistant</h4>
+      <button @click="showChat = false" class="text-gray-400">✕</button>
     </div>
-  </section>
+    <p class="text-sm text-gray-300">Olá! Como posso te ajudar com value betting?</p>
+    <input type="text" placeholder="Digite sua dúvida..." class="w-full mt-3 p-2 bg-gray-800 rounded-lg text-sm" disabled>
+  </div>
 
   <!-- FOOTER -->
-  <footer class="py-12 px-4 border-t border-gray-800">
-    <div class="max-w-7xl mx-auto">
-      <div class="grid md:gridHAS-cols-3 gap-8 text-sm">
-        <div>
-          <div class="flex items-center space-x-3 mb-4">
-            <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
-            <h3 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">OddGuru</h3>
-          </div>
-          <p class="text-gray-400">Value betting com IA. Honesto. Transparente. Lucrativo.</p>
-        </div>
-
-        <div>
-          <h4 class="font-bold text-gray-300 mb-3">Links Rápidos</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="/login.html" class="hover:text-white transition">Login</a></li>
-            <li><a href="#faq" class="hover:text-white transition">FAQ</a></li>
-            <li><a href="mailto:suporte@oddguru.pro" class="hover:text-white transition">Suporte</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="font-bold text-gray-300 mb-3">Legal</h4>
-          <ul class="space-y-2 text-gray-400 text-xs">
-            <li>© 2025 OddGuru PRO</li>
-            <li>Todos os direitos reservados</li>
-            <li>Apostas responsáveis. 18+</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <footer class="py-8 px-4 border-t border-gray-800 text-center text-xs text-gray-400">
+    <p>© 2025 OddGuru • Todos os direitos reservados</p>
   </footer>
 
-  <!-- ALPINE JS -->
+  <!-- ALPINE -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
     function liveBets() {
@@ -207,7 +153,7 @@
           try {
             const res = await fetch('/api/active-bets');
             const data = await res.json();
-            this.bets = data.active_bets.slice(0, 3);
+            this.bets = data.active_bets.slice(0, 4);
           } catch (e) {
             this.bets = [];
           }
