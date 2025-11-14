@@ -141,8 +141,75 @@
     </div>
   </section>
 
-  <!-- PLANOS, FAQ, FOOTER (igual antes) -->
-  <!-- ... (mantém o mesmo do seu último index.html) ... -->
+<!-- PLANOS -->
+  <section id="planos" class="py-16 px-4 bg-gray-900/30">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl font-bold text-center mb-12">Escolha seu plano</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <!-- FREE -->
+        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center card-hover">
+          <h3 class="text-xl font-bold">Grátis</h3>
+          <p class="text-3xl font-bold mt-4">R$0</p>
+          <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
+            <li>1 aposta por semana</li>
+            <li>Sem análise completa</li>
+            <li>Ideal pra testar</li>
+          </ul>
+          <a href="/dashboard" class="block mt-8 bg-gray-700 py-3 rounded-lg font-bold hover:bg-gray-600 transition w-full">Começar Grátis</a>
+        </div>
+
+        <!-- MENSAL -->
+        <div class="bg-gradient-to-br from-purple-600 to-pink-600 p-8 rounded-xl transform scale-105 text-white card-hover">
+          <h3 class="text-xl font-bold">PRO Mensal</h3>
+          <p class="text-4xl font-bold mt-4">R$29,90<span class="text-lg">/mês</span></p>
+          <ul class="mt-6 space-y-3 text-left text-sm">
+            <li>Todas as apostas do dia</li>
+            <li>Análise completa</li>
+            <li>Entradas no Telegram</li>
+            <li>7 dias grátis</li>
+          </ul>
+          <a href="/dashboard" class="block mt-8 bg-white text-purple-600 py-3 rounded-lg font-bold hover:bg-gray-100 transition w-full text-center">Assinar Mensal</a>
+        </div>
+
+        <!-- ANUAL -->
+        <div class="bg-gray-800/60 p-8 rounded-xl border border-gray-700 text-center card-hover">
+          <h3 class="text-xl font-bold">PRO Anual</h3>
+          <p class="text-3xl font-bold mt-4">R$239</p>
+          <p class="text-sm text-green-400 font-bold">ou 12x de R$19,90 sem juros</p>
+          <p class="text-lg text-green-400 font-bold mt-1">(-33%)</p>
+          <ul class="mt-6 space-y-3 text-left text-sm text-gray-400">
+            <li>Tudo do Mensal</li>
+            <li>2 meses grátis</li>
+            <li>Suporte prioritário</li>
+          </ul>
+          <a href="/dashboard" class="block mt-8 bg-purple-600 py-3 rounded-lg font-bold hover:bg-purple-700 transition w-full">Assinar Anual</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-16 px-4">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-3xl font-bold text-center mb-12">Dúvidas Frequentes</h2>
+      <div class="space-y-4">
+        <details class="bg-gray-800/50 p-4 rounded-lg">
+          <summary class="font-bold cursor-pointer">Vou ganhar todo dia?</summary>
+          <p class="mt-2 text-sm text-gray-300">Não. Apostas têm risco. Nosso edge é +30% a longo prazo. Alguns dias perdem, outros ganham muito.</p>
+        </details>
+        <details class="bg-gray-800/50 p-4 rounded-lg">
+          <summary class="font-bold cursor-pointer">Preciso saber de futebol?</summary>
+          <p class="mt-2 text-sm text-gray-300">Não. A IA faz tudo. Você só copia a aposta.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-8 px-4 border-t border-gray-800 text-center text-sm text-gray-400">
+    <p>© 2025 OddGuru. Todos os direitos reservados.</p>
+  </footer>
 
   <!-- ALPINE -->
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
