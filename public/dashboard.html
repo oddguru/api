@@ -165,17 +165,18 @@
           }
         },
 
-        filteredBets() {
-          let f = this.bets;
-          if (this.filter !== 'all') {
-            if (this.filter === 'ambos marcam') {
-              f = f.filter(b => b.market === 'ambos marcam');
-            } else {
-              f = f.filter(b => b.market === this.filter);
-            }
-          }
-          return f;
-        },
+filteredBets() {
+  let f = this.bets;
+  if (this.filter !== 'all') {
+    // ACEITA TANTO "ambos marcam" QUANTO "btts"
+    if (this.filter === 'ambos marcam') {
+      f = f.filter(b => b.market === 'btts' || b.market === 'ambos marcam');
+    } else {
+      f = f.filter(b => b.market === this.filter);
+    }
+  }
+  return f;
+},
 
         sortBy(key) {
           if (this.sortKey === key) this.sortAsc = !this.sortAsc;
