@@ -31,21 +31,24 @@ async def get_env():
     return {"SUPABASE_URL": SUPABASE_URL, "SUPABASE_KEY": SUPABASE_KEY}
 
 # /api/teaser (3 apostas para a home)
+# === ROTA: /api/teaser (CORRIGIDA) ===
 @app.get("/api/teaser")
-async def get_teaser():
+async def get_teaser_bets():
     try:
         if not SUPABASE_URL or not SUPABASE_KEY:
+            print("ERRO: Supabase não configurado")
             return {"bets": []}
 
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         response = supabase.table('value_bets')\
             .select('*')\
             .eq('active', True)\
-            .order('edge', ascending=False)\
+            .order('edge', ascending=False)  # <-- CORRIGIDO AQUI
             .limit(3)\
             .execute()
-
-        return {"bets": response.data or []}
+        
+        print(f"Teaser: {len(response.data)} apostas encontradas")
+        return {"bets": response.data}
     except Exception as e:
         print("Erro /api/teaser:", str(e))
         return {"bets": []}
