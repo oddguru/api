@@ -6,6 +6,7 @@
   <title>OddGuru PRO - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
     .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
@@ -57,11 +58,21 @@
           <p class="text-gray-400" x-text="updateTime"></p>
         </div>
         <div class="flex gap-3 flex-wrap">
-          <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-purple-600' : 'bg-gray-800'" class="px-5 py-2 rounded-lg font-medium text-sm transition">Todas</button>
-          <button @click="filter = 'Brasileirão'" :class="filter === 'Brasileirão' ? 'bg-purple-600' : 'bg-gray-800'" class="px-5 py-2 rounded-lg font-medium text-sm transition">Brasileirão</button>
+          <button @click="filter = 'all'" 
+                  :class="filter === 'all' ? 'bg-purple-600' : 'bg-gray-800'" 
+                  class="px-5 py-2 rounded-lg font-medium text-sm transition">
+            Todas
+          </button>
+          <button @click="filter = 'Brasileirão'" 
+                  :class="filter === 'Brasileirão' ? 'bg-purple-600' : 'bg-gray-800'" 
+                  class="px-5 py-2 rounded-lg font-medium text-sm transition">
+            Brasileirão
+          </button>
           <div class="flex bg-gray-800 rounded-lg p-1">
-            <button @click="view = 'grid'" :class="view === 'grid' ? 'bg-purple-600' : 'bg-transparent'" class="px-3 py-1 rounded text-xs transition">Grade</button>
-            <button @click="view = 'list'" :class="view === 'list' ? 'bg-purple-600' : 'bg-transparent'" class="px-3 py-1 rounded text-xs transition">Lista</button>
+            <button @click="view = 'grid'" :class="view === 'grid' ? 'bg-purple-600' : 'bg-transparent'" 
+                    class="px-3 py-1 rounded text-xs transition">Grade</button>
+            <button @click="view = 'list'" :class="view === 'list' ? 'bg-purple-600' : 'bg-transparent'" 
+                    class="px-3 py-1 rounded text-xs transition">Lista</button>
           </div>
         </div>
       </div>
@@ -72,8 +83,8 @@
   <section class="px-4 pb-20">
     <div class="max-w-7xl mx-auto">
       <div :class="view === 'grid' ? 'grid md:grid-cols-3 gap-6' : 'space-y-4'">
-
-        <!-- LOADING -->
+        
+        <!-- LOADING (CORRIGIDO) -->
         <div x-show="loading" :class="view === 'grid' ? 'col-span-3' : ''">
           <div :class="view === 'grid' ? 'grid md:grid-cols-3 gap-6' : 'space-y-4'">
             <template x-for="_ in Array(9)">
@@ -156,6 +167,7 @@
             const env = await res.json()
             await new Promise(r => setTimeout(r, 500))
             this.supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_KEY)
+            console.log('Supabase conectado!')
           } catch (err) {
             console.error('Erro env:', err)
             this.loading = false
@@ -178,6 +190,7 @@
           } catch (err) {
             console.error('Erro Supabase:', err)
             this.bets = []
+            this.updateTime = 'Erro ao carregar apostas.'
           } finally {
             this.loading = false
           }
