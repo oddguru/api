@@ -6,12 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from supabase import create_client
 
-app = FastAPI(title="OddGuru PRO v12.0")
+app = FastAPI()
 
-# Serve arquivos estáticos (index.html, dashboard.html, etc)
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
-# CORS (permite tudo — ajuste depois se quiser mais segurança)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,33 +18,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Variáveis do Render
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# === ROTA: / (INDEX) ===
+# ROTA RAIZ
 @app.get("/", response_class=HTMLResponse)
 async def get_index():
     return FileResponse("public/index.html")
 
-# === ROTA: /dashboard ===
+# DASHBOARD
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
     return FileResponse("public/dashboard.html")
 
-# === ROTA: /env (para o frontend pegar as chaves) ===
+# ENV (OBRIGATÓRIA!)
 @app.get("/env")
 async def get_env():
     if not SUPABASE_URL or not SUPABASE_KEY:
-        return JSONResponse({"error": "Configuração ausente"}, status_code=500)
-    return {
-        "SUPABASE_URL": SUPABASE_URL,
-        "SUPABASE_KEY": SUPABASE_KEY
-    }
+        return JSONResponse({"error": "Supabase não configurado"}, status_code=500)
+    return {"SUPABASE_URL": SUPABASE_URL, "SUPABASE_KEY": SUPABASE_KEY}
 
-# === ROTA: /api/teaser (3 melhores apostas para a home) ===
+# TEASER (3 APOSTAS)
 @app.get("/api/teaser")
 async def get_teaser_bets():
     try:
@@ -57,7 +51,7 @@ async def get_teaser_bets():
         response = supabase.table('value_bets')\
             .select('*')\
             .eq('active', True)\
-            .order('edge', ascending=False) \
+            .order('edge', ascending=False)\
             .limit(3)\
             .execute()
         
@@ -66,7 +60,7 @@ async def get_teaser_bets():
         print("Erro /api/teaser:", str(e))
         return {"bets": []}
 
-# === ROTA: /api/telegram (recebe do Supabase Trigger) ===
+# TELEGRAM
 @app.post("/api/telegram")
 async def send_to_telegram(request: Request):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
@@ -93,7 +87,6 @@ async def send_to_telegram(request: Request):
         print("Erro Telegram:", str(e))
         return {"status": "error", "msg": str(e)}
 
-# === ROTA: /health ===
 @app.get("/health")
 async def health():
     return {"status": "ok"}
