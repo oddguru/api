@@ -1,18 +1,16 @@
 import os
-import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from supabase import create_client
 
-# === CONFIGURAÇÃO DO APP ===
 app = FastAPI()
 
-# Monta pasta public (index.html, dashboard.html, etc)
+# Serve arquivos estáticos
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
-# CORS (permite tudo — ajuste depois se quiser segurança)
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,100 +19,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === VARIÁVEIS DO AMBIENTE (RENDER) ===
+# Variáveis do Render
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# === ROTA: / (INDEX) ===
-@app.get("/", response_class=HTMLResponse)
-async def get_index():
-    return FileResponse("public/index.html")
-
-# === ROTA: /dashboard ===
-@app.get("/dashboard", response_class=HTMLResponse)
-async def get_dashboard():
-    return FileResponse("public/dashboard.html")
-
-# === ROTA: /env (SEGURA, SÓ LEITURA) ===
+# /env (para o dashboard)
 @app.get("/env")
 async def get_env():
     if not SUPABASE_URL or not SUPABASE_KEY:
-        return JSONResponse({"error": "Configuração ausente"}, status_code=500)
-    return {
-        "SUPABASE_URL": SUPABASE_URL,
-        "SUPABASE_KEY": SUPABASE_KEY
-    }
+        return JSONResponse({"error": "Supabase não configurado"}, status_code=500)
+    return {"SUPABASE_URL": SUPABASE_URL, "SUPABASE_KEY": SUPABASE_KEY}
 
-# === ROTA: /api/teaser (3 MELHORES APOSTAS) ===
+# /api/teaser (3 apostas para a home)
 @app.get("/api/teaser")
-async def get_teaser_bets():
+async def get_teaser():
     try:
         if not SUPABASE_URL or not SUPABASE_KEY:
-            print("ERRO: SUPABASE_URL ou SUPABASE_KEY não configurados")
-            return {"bets": [], "error": "Supabase não configurado"}
+            return {"bets": []}
 
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         response = supabase.table('value_bets')\
             .select('*')\
             .eq('active', True)\
-            .order('edge', descending=True)\
+            .order('edge', ascending=False)\
             .limit(3)\
             .execute()
-        
-        print(f"Teaser: {len(response.data)} apostas encontradas")
-        return {"bets": response.data}
+
+        return {"bets": response.data or []}
     except Exception as e:
         print("Erro /api/teaser:", str(e))
-        return {"bets": [], "error": str(e)}
+        return {"bets": []}
 
-# === ROTA: /api/telegram (RECEBE DO SUPABASE TRIGGER) ===
-@app.post("/api/telegram")
-async def send_to_telegram(request: Request):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        print("ERRO: Telegram não configurado (TOKEN ou CHAT_ID ausente)")
-        return {"status": "error", "msg": "Telegram não configurado"}
+# Rota raiz
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return FileResponse("public/index.html")
 
-    try:
-        data = await request.json()
-        
-        message = (
-            f"<b>{data['match']}</b>\n\n"
-            f"<b>{data['selection']}</b>\n"
-            f"Odd: <b>{data['odd']}</b> | +{int(data['edge']*100)}%\n\n"
-            f"<i>{data['why']}</i>\n\n"
-            f"Aposte na {data['bookmaker']} →"
-        )
+# Dashboard
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    return FileResponse("public/dashboard.html")
 
-        keyboard = {
-            "inline_keyboard": [[
-                {
-                    "text": "Apostar",
-                    "url": data['affiliate_link']
-                }
-            ]]
-        }
-
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML",
-            "reply_markup": keyboard
-        }
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload)
-            if response.status_code != 200:
-                print("Erro Telegram API:", response.text)
-
-        return {"status": "sent"}
-    except Exception as e:
-        print("Erro no envio Telegram:", str(e))
-        return {"status": "error", "msg": str(e)}
-
-# === ROTA: /health (OPCIONAL) ===
+# Health
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "OddGuru PRO API"}
+    return {"status": "ok"}
