@@ -87,3 +87,10 @@ async def send_to_telegram(request: Request):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/env")
+async def get_env():
+    return {
+        "SUPABASE_URL": os.getenv("SUPABASE_URL"),
+        "SUPABASE_KEY": os.getenv("SUPABASE_KEY")
+    }
