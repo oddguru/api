@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR" x-data="profile()" x-init="loadUser()">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OddGuru PRO - Minha Conta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #0a0a1a, #1a1a2e); }
+    .blur-card { backdrop-filter: blur(12px); background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(139, 92, 246, 0.2); }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen gradient-bg">
+
+  <!-- NAVBAR -->
+  <nav class="border-b border-gray-800 backdrop-blur-sm bg-black/60 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
+        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          OddGuru PRO
+        </h1>
+      </div>
+      <a href="/dashboard" class="text-gray-300 hover:text-white">← Voltar</a>
+    </div>
+  </nav>
+
+  <!-- MINHA CONTA -->
+  <section class="py-16 px-4">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold mb-8">Minha Conta</h2>
+
+      <!-- PLANO ATUAL -->
+      <div class="blur-card rounded-xl p-8 mb-8">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h3 class="text-xl font-bold">Plano Atual</h3>
+            <p class="text-3xl font-bold text-cyan-400 mt-2" x-text="user.plan"></p>
+            <p class="text-sm text-gray-400" x-text="`Ativo até: ${user.expiry}`"></p>
+          </div>
+          <div x-show="user.plan === 'Grátis'">
+            <a href="/pricing" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-8 rounded-xl transition">
+              Fazer Upgrade
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- DADOS PESSOAIS -->
+      <div class="blur-card rounded-xl p-8 mb-8">
+        <h3 class="text-xl font-bold mb-6">Dados Pessoais</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-sm text-gray-400">Nome</p>
+            <p class="font-bold" x-text="user.name"></p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Email</p>
+            <p class="font-bold" x-text="user.email"></p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Telegram</p>
+            <p class="font-bold" x-text="user.telegram || 'Não conectado'"></p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Ligas Favoritas</p>
+            <p class="font-bold" x-text="user.favorite_leagues || 'Nenhuma'"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIGURAÇÕES -->
+      <div class="blur-card rounded-xl p-8">
+        <h3 class="text-xl font-bold mb-6">Configurações</h3>
+        <div class="space-y-4">
+          <label class="flex items-center justify-between cursor-pointer">
+            <span>Notificações no Telegram</span>
+            <input type="checkbox" class="w-6 h-6 text-purple-600" x-model="user.notifications">
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span>Entradas ao vivo (PLUS)</span>
+            <input type="checkbox" class="w-6 h-6 text-purple-600" :disabled="user.plan !== 'PLUS'">
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span>E-mail com resumo diário</span>
+            <input type="checkbox" class="w-6 h-6 text-purple-600" x-model="user.email_summary">
+          </label>
+        </div>
+        <button class="mt-6 bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-medium transition">
+          Salvar Alterações
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALPINE -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    function profile() {
+      return {
+        user: {
+          name: "Carlos",
+          email: "carlos@oddguru.pro",
+          plan: "PRO Mensal",
+          expiry: "21/12/2025",
+          telegram: "@carlos_oddguru",
+          favorite_leagues: "Brasileirão, Libertadores",
+          notifications: true,
+          email_summary: false
+        },
+        async loadUser() {
+          // Futuro: puxa do Supabase
+        }
+      }
+    }
+  </script>
+</body>
+</html>
